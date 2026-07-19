@@ -1,137 +1,202 @@
-<div class="relative flex h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 text-slate-100 font-sans antialiased">
-  
-  <!-- Outer glowing orbs providing depth behind the glass panels -->
-  <div class="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-purple-500/10 blur-3xl pointer-events-none"></div>
-  <div class="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
+<!-- Friendly rounded typeface: add to index.html <head> —
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet"> -->
+<div class="relative flex h-screen w-screen overflow-hidden bg-neutral-200 text-neutral-900 font-['Nunito',_sans-serif] antialiased text-[15px]">
+
+  <!-- Soft neutral background wash -->
+  <div class="absolute inset-0 bg-gradient-to-br from-white via-neutral-200 to-neutral-300 pointer-events-none"></div>
+  <div class="absolute -top-32 -left-32 w-96 h-96 bg-indigo-200/30 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -bottom-32 -right-24 w-96 h-96 bg-indigo-100/40 rounded-full blur-3xl pointer-events-none"></div>
 
   <!-- Main Container Layout Wrap -->
-  <div class="flex w-full h-full p-4 gap-4 box-border z-10">
-    
-    <!-- SIDEBAR: Glass Panel Layer -->
-    <aside class="w-80 flex flex-col rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl transition-all duration-300">
-      
+  <div class="flex w-full h-full p-5 gap-5 box-border z-10">
+
+    <!-- SIDEBAR: Frosted Glass Panel -->
+    <aside
+      class="w-76 flex flex-col rounded-[2rem] border border-black/5 bg-white/60 backdrop-blur-2xl shadow-xl transition-all">
+
+      <!-- App Identity Header -->
+      <div class="pt-6 px-5 pb-3">
+        <h1
+          class="text-2xl font-['Quicksand',_sans-serif] font-bold tracking-tight text-neutral-800 flex items-center gap-2">
+          <span class="text-indigo-500 font-extrabold text-lg">✦</span> SageGPT
+        </h1>
+      </div>
+
       <!-- New Chat Button Trigger Area -->
-      <div class="p-4 border-b border-white/10">
-        <button 
-          (click)="onNewChat()"
-          class="w-full py-2.5 px-4 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 active:scale-98 transition text-sm font-medium flex items-center justify-center gap-2 tracking-wide cursor-pointer">
-          <span class="text-lg leading-none">+</span> New Chat
+      <div class="px-4 pb-4 border-b border-black/5">
+        <button (click)="onNewChat()"
+          class="w-full py-3 px-4 rounded-full border border-black/5 bg-white/70 hover:bg-white text-neutral-700 hover:text-indigo-600 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer shadow-sm">
+          <span class="text-base font-light text-indigo-500">+</span> New Conversation
         </button>
       </div>
 
       <!-- Historical Navigation Stack Layout -->
-      <div class="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin">
-        <div class="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Recent Conversations</div>
-        
+      <!-- #chatListFrame: scroll this to bottom whenever conversations() grows or a new conversation is selected -->
+      <div #chatListFrame class="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin">
         @for (chat of chatService.conversations(); track chat.chatId) {
-          <button 
-            (click)="onSelectConversation(chat.chatId)"
-            [class.bg-white/10]="chatService.currentChatId() === chat.chatId"
-            [class.border-white/10]="chatService.currentChatId() === chat.chatId"
-            class="w-full text-left py-3 px-4 rounded-xl text-sm transition text-slate-300 hover:text-white hover:bg-white/5 border border-transparent flex items-center justify-between cursor-pointer group truncate">
-            <span class="truncate pr-2">{{ chat.chatName }}</span>
-            <span class="opacity-0 group-hover:opacity-40 transition-opacity text-xs">→</span>
-          </button>
+        <button (click)="onSelectConversation(chat.chatId)"
+          [class.bg-indigo-50]="chatService.currentChatId() === chat.chatId"
+          [class.text-indigo-700]="chatService.currentChatId() === chat.chatId"
+          [class.border-indigo-100]="chatService.currentChatId() === chat.chatId"
+          class="w-full text-left py-3 px-4 rounded-2xl text-sm font-medium transition-all text-neutral-500 border border-transparent hover:text-neutral-800 hover:bg-white/70 flex items-center justify-between cursor-pointer group truncate">
+          <span class="truncate pr-2">{{ chat.chatName }}</span>
+          <span class="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400 font-mono">/</span>
+        </button>
         } @empty {
-          <div class="text-xs text-slate-500 text-center py-8">No conversation history found.</div>
+        <div class="text-xs text-neutral-400 text-center py-8">No prior threads saved.</div>
         }
       </div>
 
-      <!-- Bottom User Context/Model Select Area -->
-      <div class="p-4 border-t border-white/10 space-y-3 bg-black/10 rounded-b-2xl">
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-slate-400">Target Engine Model</label>
-          <select 
-            [value]="chatService.selectedModelKey()" 
-            (change)="onModelChange($event)"
-            class="w-full bg-slate-900/60 border border-white/10 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:border-indigo-500 text-slate-200">
-            <optgroup label="Local Infrastructures" class="bg-slate-950 text-slate-300">
-              @for (m of chatService.localModels(); track m.id) {
-                <option [value]="m.modelKey">{{ m.name }}</option>
-              }
-            </optgroup>
-            <optgroup label="Cloud Infrastructures" class="bg-slate-950 text-slate-300">
-              @for (m of chatService.cloudModels(); track m.id) {
-                <option [value]="m.modelKey">{{ m.name }}</option>
-              }
-            </optgroup>
-          </select>
-        </div>
+      <!-- UTILITY FOOTER: Refined SVG icon rail -->
+      <div class="p-3 border-t border-black/5 grid grid-cols-4 gap-1 bg-black/[0.02] rounded-b-[2rem]">
+        <button (click)="onTriggerSettings()" title="Settings"
+          class="p-2.5 rounded-2xl text-neutral-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+        <button (click)="onTriggerProjects()" title="Projects"
+          class="p-2.5 rounded-2xl text-neutral-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
+          </svg>
+        </button>
+        <button (click)="onTriggerReset()" title="Reset Interface"
+          class="p-2.5 rounded-2xl text-neutral-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+            <path d="M3 4v5h5"></path>
+          </svg>
+        </button>
+        <button (click)="onTriggerAbout()" title="About System"
+          class="p-2.5 rounded-2xl text-neutral-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <line x1="12" y1="11" x2="12" y2="16"></line>
+            <circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle>
+          </svg>
+        </button>
       </div>
     </aside>
 
     <!-- MAIN CHAT INTERFACE WINDOW -->
-    <main class="flex-1 flex flex-col rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl overflow-hidden">
-      
-      <!-- Top Dynamic Window Navbar Header -->
-      <header class="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-white/2">
-        <div class="flex items-center gap-3">
-          <div class="h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]"></div>
-          <span class="font-medium tracking-wide text-sm text-slate-200">
-            {{ chatService.currentChatId() === 0 ? 'New Session Sandbox' : 'Active Thread ID: #' + chatService.currentChatId() }}
-          </span>
+    <main
+      class="flex-1 flex flex-col rounded-[2rem] border border-black/5 bg-white/60 backdrop-blur-2xl shadow-xl overflow-hidden">
+
+      <!-- Top Window Navbar Header -->
+      <header class="h-16 border-b border-black/5 flex items-center justify-between px-6 bg-white/40">
+        <div class="flex items-center gap-2.5">
+          <div class="text-sm text-neutral-500 font-semibold">Workspace Context</div>
         </div>
-        <div class="text-xs bg-indigo-500/20 border border-indigo-500/30 px-2.5 py-1 rounded-full text-indigo-300 uppercase tracking-widest font-mono">
-          {{ chatService.selectedModelKey() || 'No Model Picked' }}
+
+        <!-- Model Banner: friendly pill showing the active engine -->
+        <div class="flex items-center gap-2.5 bg-white/80 pl-2 pr-3.5 py-1.5 rounded-full border border-black/5 shadow-sm">
+          <span class="flex h-6 w-6 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-xs">✦</span>
+          <span class="text-sm font-bold text-indigo-600 tracking-wide">
+            {{ chatService.selectedModelKey() || 'None Chosen' }}
+          </span>
         </div>
       </header>
 
       <!-- Message Scrolling Viewport Area -->
-      <div class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin bg-black/5">
+      <!-- #scrollFrame: scroll this to bottom on new message, new conversation selection, or isThinking() toggling -->
+      <div #scrollFrame class="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin bg-black/[0.015]">
         @for (msg of chatService.messages(); track $index) {
-          <div class="flex w-full" [class.justify-end]="msg.role === 'user'">
-            
-            <div [class.max-w-2xl]="true"
-                 [class.rounded-2xl]="true"
-                 [class.p-4.5]="true"
-                 [class.text-sm]="true"
-                 [class.leading-relaxed]="true"
-                 [class.shadow-lg]="true"
-                 [class.border]="true"
-                 [class.bg-indigo-600/20]="msg.role === 'user'"
-                 [class.border-indigo-500/30]="msg.role === 'user'"
-                 [class.text-slate-100]="msg.role === 'user'"
-                 [class.bg-white/5]="msg.role !== 'user'"
-                 [class.border-white/5]="msg.role !== 'user'"
-                 [class.text-slate-200]="msg.role !== 'user'">
-              
-              <!-- Author Role Indicator Tag -->
-              <div class="text-[10px] uppercase tracking-widest font-semibold mb-1 opacity-40">
-                {{ msg.role === 'user' ? 'You' : 'Assistant Engine' }}
-              </div>
-              
-              <!-- Main Content Text -->
-              <div class="whitespace-pre-wrap">{{ msg.content }}</div>
+
+        <!-- Chat bubble row: right-aligned + indigo for user, left-aligned + white/grey glass for assistant -->
+        <div class="flex w-full" [class.justify-end]="msg.role === 'user'" [class.justify-start]="msg.role !== 'user'">
+          <div
+            [class.bg-indigo-600]="msg.role === 'user'"
+            [class.text-white]="msg.role === 'user'"
+            [class.rounded-br-md]="msg.role === 'user'"
+            [class.bg-white/80]="msg.role !== 'user'"
+            [class.text-neutral-800]="msg.role !== 'user'"
+            [class.rounded-bl-md]="msg.role !== 'user'"
+            [class.border]="msg.role !== 'user'"
+            [class.border-black/5]="msg.role !== 'user'"
+            class="max-w-[75%] rounded-3xl px-4 py-3 shadow-sm">
+
+            <div
+              class="text-[10px] uppercase tracking-wider font-bold mb-1.5"
+              [class.text-indigo-100]="msg.role === 'user'"
+              [class.text-neutral-400]="msg.role !== 'user'">
+              {{ msg.role === 'user' ? 'User Identity' : 'Sage Engine' }}
+            </div>
+
+            <div
+              class="whitespace-pre-wrap break-words text-base leading-relaxed tracking-normal font-normal selection:bg-indigo-300/40">
+              {{ msg.content }}
             </div>
           </div>
-        } @empty {
-          <div class="h-full flex flex-col items-center justify-center text-center p-8 max-w-md mx-auto space-y-3">
-            <div class="text-4xl text-indigo-400 opacity-60">✦</div>
-            <h2 class="text-xl font-medium text-slate-200 tracking-tight">How can I assist your workflow?</h2>
-            <p class="text-sm text-slate-400 leading-normal">
-              Select a previous workspace session from the history configuration tree, or initiate dynamic prompt queries below.
-            </p>
+        </div>
+        }
+
+        <!-- Thinking Prompt Indicator Panel -->
+        @if (chatService.isThinking()) {
+        <div class="flex w-full justify-start transition-all duration-200">
+          <div
+            class="max-w-xs rounded-3xl rounded-bl-md p-4 border border-black/5 bg-white/80 text-neutral-400 text-xs flex items-center gap-3 shadow-sm">
+            <span class="flex h-2 w-2 relative">
+              <span
+                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </span>
+            <span class="italic font-mono tracking-wide">{{ chatService.thinkingStatus() }}</span>
           </div>
+        </div>
         }
       </div>
 
-      <!-- Fixed Form Message Submission Control Pad -->
-      <footer class="p-4 border-t border-white/10 bg-white/2">
-        <form (ngSubmit)="submitMessage()" class="relative flex items-center max-w-4xl mx-auto">
-          <input 
-            type="text" 
-            [(ngModel)]="userInput" 
-            name="messageInput"
-            placeholder="Send a prompt message..."
-            autocomplete="off"
-            class="w-full bg-slate-950/40 border border-white/10 focus:border-indigo-500/60 rounded-xl pl-4 pr-14 py-3.5 text-sm focus:outline-none placeholder-slate-500 transition-all shadow-inner text-slate-200 backdrop-blur-sm"
-          />
-          <button 
-            type="submit" 
-            [disabled]="!userInput().trim()"
-            class="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-10 flex items-center justify-center bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-white/10 text-white rounded-lg transition active:scale-95 cursor-pointer border border-white/10">
-            <span>↑</span>
-          </button>
+      <!-- Form Control Pad: shorter, more rounded, wraps text -->
+      <footer class="p-5 border-t border-black/5 bg-white/40 flex flex-col items-center">
+        <form (ngSubmit)="submitMessage()" class="w-full max-w-xl flex flex-col gap-3">
+
+          <div
+            class="relative w-full flex items-end bg-white/80 border border-black/5 focus-within:border-indigo-300 rounded-[1.75rem] p-2 transition-all shadow-sm backdrop-blur-md">
+
+            <!-- Multi-line wrapping prompt input, wraps rather than growing wide -->
+            <textarea [(ngModel)]="userInput" name="messageInput" rows="1" placeholder="Send a message to Sage..."
+              (keydown.enter)="handleEnterKey($event)"
+              class="flex-1 bg-transparent border-0 ring-0 focus:outline-none placeholder-neutral-400 text-neutral-800 text-base py-2.5 px-3 resize-none max-h-36 min-h-[40px] scrollbar-none leading-normal break-words whitespace-pre-wrap">
+            </textarea>
+
+            <div class="flex items-center gap-2.5 pl-2.5 border-l border-black/5 h-10 mb-0.5">
+
+              <!-- MODEL SELECTOR: pill picker with icon + custom chevron, native select layered on top for a11y -->
+              <div class="relative flex items-center h-9">
+                <span class="pointer-events-none absolute left-3 flex h-4 w-4 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[9px]">✦</span>
+                <select [value]="chatService.selectedModelKey()" (change)="onModelChange($event)"
+                  class="appearance-none bg-neutral-100 hover:bg-neutral-200/70 border border-black/5 rounded-full h-9 pl-8 pr-7 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 text-neutral-700 max-w-[150px] truncate cursor-pointer transition-colors">
+                  <optgroup label="Local" class="bg-white text-neutral-500 font-medium">
+                    @for (m of chatService.localModels(); track m.id) {
+                    <option [value]="m.modelKey">{{ m.name }}</option>
+                    }
+                  </optgroup>
+                  <optgroup label="Cloud" class="bg-white text-neutral-500 font-medium">
+                    @for (m of chatService.cloudModels(); track m.id) {
+                    <option [value]="m.modelKey">{{ m.name }}</option>
+                    }
+                  </optgroup>
+                </select>
+                <svg class="pointer-events-none absolute right-2.5 text-neutral-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+
+              <!-- Send Button Anchor -->
+              <button type="submit" [disabled]="!userInput().trim() || chatService.isThinking()"
+                class="h-9 w-9 flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-20 disabled:hover:bg-indigo-600 rounded-full transition-all active:scale-95 cursor-pointer shadow-sm">
+                <span class="font-bold text-sm">↑</span>
+              </button>
+            </div>
+
+          </div>
+
+          <div class="text-xs text-neutral-400 font-mono tracking-normal text-center">
+            Shift + Enter keys force a new baseline wrapper row.
+          </div>
         </form>
       </footer>
 
