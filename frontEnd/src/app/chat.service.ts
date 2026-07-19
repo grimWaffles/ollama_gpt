@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-export interface ModelInfo { id: number; name: string; modelKey: string; }
+export interface ModelInfo { id: number; name: string; modelKey: string; badge?: string}
 export interface ChatMessage { role: 'user' | 'assistant' | string; content: string; }
 export interface ChatRequest { userId: number; chatId: number; message: string; }
 export interface ChatResponse { userId: number; chatId: number; messages: ChatMessage[]; }
@@ -19,13 +19,13 @@ export class ChatService {
   localModels = signal<ModelInfo[]>([]);
   cloudModels = signal<ModelInfo[]>([]);
   selectedModelKey = signal<string>('');
-  
+
   // Status tracking states
   isThinking = signal<boolean>(false);
   thinkingStatus = signal<string>('Thinking...');
 
   private thinkingPhrases = [
-    'Thinking...', 'Contemplating...', 'Analyzing variables...', 
+    'Thinking...', 'Contemplating...', 'Analyzing variables...',
     'Formulating response...', 'Synthesizing knowledge...', 'Consulting neural map...'
   ];
 
@@ -58,7 +58,7 @@ export class ChatService {
       .subscribe(data => this.messages.set(data));
   }
 
-  /* 
+  /*
    * NON-STREAMING STANDARD HTTP POST PIPELINE
    * Directly posts to your FastAPI endpoint and sets the full message list on return.
    */
@@ -79,11 +79,11 @@ export class ChatService {
       next: (res) => {
         clearInterval(intervalId);
         this.isThinking.set(false);
-        
+
         // Update application contexts with full backend payloads
         this.currentChatId.set(res.chatId);
         this.messages.update(prev => [...prev, ...res.messages]);
-        
+
         // Refresh sidebar conversation logs
         this.loadConversations();
       },

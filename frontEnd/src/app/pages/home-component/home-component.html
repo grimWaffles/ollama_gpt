@@ -111,11 +111,11 @@
             [class.bg-indigo-600]="msg.role === 'user'"
             [class.text-white]="msg.role === 'user'"
             [class.rounded-br-md]="msg.role === 'user'"
-            [class.bg-white/80]="msg.role !== 'user'"
+            [class.bg-white-80]="msg.role !== 'user'"
             [class.text-neutral-800]="msg.role !== 'user'"
             [class.rounded-bl-md]="msg.role !== 'user'"
             [class.border]="msg.role !== 'user'"
-            [class.border-black/5]="msg.role !== 'user'"
+            [class.border-black-5]="msg.role !== 'user'"
             class="max-w-[75%] rounded-3xl px-4 py-3 shadow-sm">
 
             <div
@@ -164,25 +164,63 @@
 
             <div class="flex items-center gap-2.5 pl-2.5 border-l border-black/5 h-10 mb-0.5">
 
-              <!-- MODEL SELECTOR: pill picker with icon + custom chevron, native select layered on top for a11y -->
+              <!-- MODEL SELECTOR: custom Claude-style dropdown with badges (native <option> can't hold styled chips) -->
               <div class="relative flex items-center h-9">
-                <span class="pointer-events-none absolute left-3 flex h-4 w-4 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[9px]">✦</span>
-                <select [value]="chatService.selectedModelKey()" (change)="onModelChange($event)"
-                  class="appearance-none bg-neutral-100 hover:bg-neutral-200/70 border border-black/5 rounded-full h-9 pl-8 pr-7 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 text-neutral-700 max-w-[150px] truncate cursor-pointer transition-colors">
-                  <optgroup label="Local" class="bg-white text-neutral-500 font-medium">
-                    @for (m of chatService.localModels(); track m.id) {
-                    <option [value]="m.modelKey">{{ m.name }}</option>
+                <button type="button" (click)="onToggleModelMenu()"
+                  class="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200/70 border border-black/5 rounded-full h-9 pl-2.5 pr-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 text-neutral-700 max-w-[170px] cursor-pointer transition-colors">
+                  <span class="flex h-4 w-4 shrink-0 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[9px]">✦</span>
+                  <span class="truncate">{{ chatService.selectedModelKey() || 'Select model' }}</span>
+                  <svg class="shrink-0 text-neutral-400 transition-transform" [class.rotate-180]="isModelMenuOpen()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                @if (isModelMenuOpen()) {
+                <!-- Click-outside scrim -->
+                <button type="button" (click)="onToggleModelMenu()" aria-label="Close model menu"
+                  class="fixed inset-0 z-10 cursor-default" tabindex="-1"></button>
+
+                <div class="absolute bottom-full mb-2 right-0 w-72 max-h-80 overflow-y-auto bg-white rounded-2xl border border-black/5 shadow-xl p-1.5 z-20 scrollbar-thin">
+
+                  <div class="px-2.5 pt-2 pb-1 text-[10px] uppercase tracking-wider font-bold text-neutral-400">Local</div>
+                  @for (m of chatService.localModels(); track m.id) {
+                  <button type="button" (click)="onModelChange(m); onToggleModelMenu()"
+                    class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-neutral-100 text-left transition-colors cursor-pointer">
+                    <span class="flex h-6 w-6 shrink-0 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[10px]">✦</span>
+                    <span class="flex-1 min-w-0 flex items-center gap-2">
+                      <span class="text-sm font-semibold text-neutral-700 truncate">{{ m.name }}</span>
+                      @if (m.badge) {
+                      <span class="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">{{ m.badge }}</span>
+                      }
+                    </span>
+                    @if (chatService.selectedModelKey() === m.modelKey) {
+                    <svg class="shrink-0 text-indigo-500" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
                     }
-                  </optgroup>
-                  <optgroup label="Cloud" class="bg-white text-neutral-500 font-medium">
-                    @for (m of chatService.cloudModels(); track m.id) {
-                    <option [value]="m.modelKey">{{ m.name }}</option>
+                  </button>
+                  }
+
+                  <div class="px-2.5 pt-3 pb-1 text-[10px] uppercase tracking-wider font-bold text-neutral-400">Cloud</div>
+                  @for (m of chatService.cloudModels(); track m.id) {
+                  <button type="button" (click)="onModelChange(m); onToggleModelMenu()"
+                    class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-neutral-100 text-left transition-colors cursor-pointer">
+                    <span class="flex h-6 w-6 shrink-0 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[10px]">✦</span>
+                    <span class="flex-1 min-w-0 flex items-center gap-2">
+                      <span class="text-sm font-semibold text-neutral-700 truncate">{{ m.name }}</span>
+                      @if (m.badge) {
+                      <span class="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">{{ m.badge }}</span>
+                      }
+                    </span>
+                    @if (chatService.selectedModelKey() === m.modelKey) {
+                    <svg class="shrink-0 text-indigo-500" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
                     }
-                  </optgroup>
-                </select>
-                <svg class="pointer-events-none absolute right-2.5 text-neutral-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
+                  </button>
+                  }
+                </div>
+                }
               </div>
 
               <!-- Send Button Anchor -->
@@ -195,7 +233,7 @@
           </div>
 
           <div class="text-xs text-neutral-400 font-mono tracking-normal text-center">
-            Shift + Enter keys force a new baseline wrapper row.
+            SageGPT is AI. Please make sure to check the results.
           </div>
         </form>
       </footer>

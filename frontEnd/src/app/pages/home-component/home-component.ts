@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, effect, viewChild, ElementRef, ViewChild } from '@angular/core';
+import {Component, inject, OnInit, signal, effect, viewChild, ElementRef, ViewChild, computed} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService } from '../../chat.service';
@@ -36,7 +36,7 @@ export class HomeComponent implements OnInit {
   ngAfterViewChecked() {
     this.scrollFrame?.nativeElement.scrollTo({ top: this.scrollFrame.nativeElement.scrollHeight });
   }
-  
+
   private scrollToBottom(): void {
     setTimeout(() => {
       const container = this.scrollContainer()?.nativeElement;
@@ -58,9 +58,8 @@ export class HomeComponent implements OnInit {
     this.chatService.startNewChat();
   }
 
-  onModelChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    this.chatService.selectedModelKey.set(target.value);
+  onModelChange(model: { modelKey: string; name: string; id: string | number; badge?: string }) {
+    this.chatService.selectedModelKey.set(model.modelKey);
   }
 
   submitMessage(): void {
@@ -84,6 +83,18 @@ export class HomeComponent implements OnInit {
     keyboardEvent.preventDefault();
     this.submitMessage();
   }
+
+  isModelMenuOpen = signal(false);
+
+  onToggleModelMenu() {
+    this.isModelMenuOpen.update(v => !v);
+  }
+
+  selectedModelName = computed(() => {
+    const key = this.chatService.selectedModelKey();
+    const all = [...this.chatService.localModels(), ...this.chatService.cloudModels()];
+    return all.find(m => m.modelKey === key)?.name ?? '';
+  });
 
   // Bottom action triggers
   onTriggerSettings() { console.log('Settings triggered'); }
