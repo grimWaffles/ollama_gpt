@@ -1,7 +1,7 @@
 import {Component, inject, OnInit, signal, effect, viewChild, ElementRef, ViewChild, computed} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {ChatService} from '../../chat.service';
+import {ChatService, ModelInfo} from '../../chat.service';
 import {ChatMessageComponent} from '../../components/chat-message';
 
 @Component({
@@ -60,8 +60,8 @@ export class HomeComponent implements OnInit {
     this.chatService.startNewChat();
   }
 
-  onModelChange(model: { modelKey: string; name: string; id: string | number; badge?: string }) {
-    this.chatService.selectedModelKey.set(model.modelKey);
+  onModelChange(model: ModelInfo) {
+    this.chatService.selectedModel.set(model);
   }
 
   onToggleStreaming(): void {
@@ -100,7 +100,7 @@ export class HomeComponent implements OnInit {
   }
 
   selectedModelName = computed(() => {
-    const key = this.chatService.selectedModelKey();
+    const key = this.chatService.selectedModel().modelKey;
     const all = [...this.chatService.localModels(), ...this.chatService.cloudModels()];
     return all.find(m => m.modelKey === key)?.name ?? '';
   });

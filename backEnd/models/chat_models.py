@@ -12,6 +12,7 @@ class ChatRequest(BaseModel):
     userId: int
     chatId: int
     message: str
+    modelName:str = ""
 
 
 class ChatMessage(BaseModel):

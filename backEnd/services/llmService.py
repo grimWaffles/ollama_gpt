@@ -10,6 +10,7 @@ from models import conversation_entity
 from models.chat_models import ChatMessage
 from repository.repository import ConversationRepository
 
+
 class LlmService:
     def __init__(self):
         self.repo = ConversationRepository()
@@ -34,7 +35,7 @@ class LlmService:
             "Only call tools when they are actually needed."
         )
 
-    def chatWithLlm(self,user_id: int, chat_id: int, message: str) -> tuple[int, List[ChatMessage]]:
+    def chatWithLlm(self, user_id: int, chat_id: int, model_name: str, message: str) -> tuple[int, List[ChatMessage]]:
 
         conversation: List[ChatMessage] = []
         try:
@@ -45,7 +46,7 @@ class LlmService:
                     SimpleNamespace(
                         chatId=chat_id,
                         userId=user_id,
-                        chatName=f"Conversation #{max_chat_id+1}",
+                        chatName=f"Conversation #{max_chat_id + 1}",
                         created_at=datetime.utcnow(),
                     )
                 )
@@ -75,8 +76,8 @@ class LlmService:
                 )
             )
 
-            # Select the desired model (example: GPT-5 Mini)
-            _, model_name = self.cloud_models[1]
+            # # Select the desired model (example: GPT-5 Mini)
+            # _, model_name = self.cloud_models[1]
 
             agent = OllamaAgent(
                 model_name=model_name,
@@ -120,7 +121,7 @@ class LlmService:
             print(f"Error: {e}")
             return chat_id, []
 
-    def chatWithLlmStream(self, user_id: int, chat_id: int, message: str):
+    def chatWithLlmStream(self, user_id: int, chat_id: int, model_name: str, message: str):
         conversation: List[ChatMessage] = []
         try:
             if not chat_id or chat_id == 0:
@@ -157,7 +158,7 @@ class LlmService:
                 )
             )
 
-            _, model_name = self.cloud_models[1]
+            #_, model_name = self.cloud_models[1]
 
             agent = OllamaAgent(
                 model_name=model_name,
@@ -201,7 +202,7 @@ class LlmService:
             print(f"Error: {e}")
             yield chat_id, None
 
-    def getConversation(self,user_id):
+    def getConversation(self, user_id):
         user_conversations = self.repo.get_user_conversations(user_id)
 
         return user_conversations

@@ -17,6 +17,7 @@ export interface ChatRequest {
   userId: number;
   chatId: number;
   message: string;
+  modelName: string;
 }
 
 export interface ChatResponse {
@@ -41,7 +42,7 @@ export class ChatService {
   conversations = signal<ConversationEntity[]>([]);
   localModels = signal<ModelInfo[]>([]);
   cloudModels = signal<ModelInfo[]>([]);
-  selectedModelKey = signal<string>('');
+  selectedModel = signal<ModelInfo>({modelKey: "", name: "", id: 0, badge: ""});
 
   // Status tracking states
   isThinking = signal<boolean>(false);
@@ -68,11 +69,33 @@ export class ChatService {
   }
 
   loadModels(): void {
+    this.http.get<ModelInfo[]>(`${this.apiUrl}/models/cloud`).subscribe(data => {
+      if (data.length > 0) {
+        this.cloudModels.set(data)
+        if (this.selectedModel().id == 0) {
+          this.selectedModel.set({
+            id: data[0].id,
+            modelKey: data[0].modelKey,
+            name: data[0].name,
+            badge: ""
+          });
+        }
+      }
+    });
+
     this.http.get<ModelInfo[]>(`${this.apiUrl}/models/local`).subscribe(data => {
       this.localModels.set(data);
-      if (data.length > 0 && !this.selectedModelKey()) this.selectedModelKey.set(data[0].modelKey);
+      if (data.length > 0) {
+        if (this.selectedModel().id == 0) {
+          this.selectedModel.set({
+            id: data[0].id,
+            modelKey: data[0].modelKey,
+            name: data[0].name,
+            badge: ""
+          });
+        }
+      }
     });
-    this.http.get<ModelInfo[]>(`${this.apiUrl}/models/cloud`).subscribe(data => this.cloudModels.set(data));
   }
 
   loadChatMessages(chatId: number): void {
@@ -87,6 +110,21 @@ export class ChatService {
    */
   sendMessage(messageContent: string): void {
     // Optimistic UI Update: immediately render what the user wrote
+    if (this.selectedModel().id == 0) {
+      this.selectedModel.set(
+        this.cloudModels() != null ? this.cloudModels()[0] : this.localModels() != null ? this.localModels()[0] : {
+          modelKey: "",
+          name: "",
+          id: 0,
+          badge: ""
+        }
+      )
+
+      if (this.selectedModel().id == 0) {
+        return
+      }
+    }
+
     const userMsg: ChatMessage = {role: 'user', content: messageContent};
     this.messages.update(prev => [...prev, userMsg]);
 
@@ -95,7 +133,8 @@ export class ChatService {
     const body: ChatRequest = {
       userId: this.userId(),
       chatId: this.currentChatId(),
-      message: messageContent
+      message: messageContent,
+      modelName: this.selectedModel().modelKey
     };
 
     this.http.post<ChatResponse>(`${this.apiUrl}/chat/`, body).subscribe({
@@ -123,6 +162,21 @@ export class ChatService {
    * Uses fetch + ReadableStream to consume Server-Sent Events from /chat/stream/
    */
   async sendMessageStream(messageContent: string): Promise<void> {
+    if (this.selectedModel().id == 0) {
+      this.selectedModel.set(
+        this.cloudModels() != null ? this.cloudModels()[0] : this.localModels() != null ? this.localModels()[0] : {
+          modelKey: "",
+          name: "",
+          id: 0,
+          badge: ""
+        }
+      )
+
+      if (this.selectedModel().id == 0) {
+        return
+      }
+    }
+
     const userMsg: ChatMessage = {role: 'user', content: messageContent};
     this.messages.update(prev => [...prev, userMsg]);
 
@@ -131,7 +185,8 @@ export class ChatService {
     const body: ChatRequest = {
       userId: this.userId(),
       chatId: this.currentChatId(),
-      message: messageContent
+      message: messageContent,
+      modelName: this.selectedModel().modelKey
     };
 
     try {

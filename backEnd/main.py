@@ -27,13 +27,13 @@ async def root(name_of_user:str,demo_service: DemoService = Depends(getDemoServi
 
 @app.post("/chat/", response_model=ChatResponse)
 async def say_hello(request: ChatRequest, llmService: LlmService = Depends(getLlmService)):
-    chat_id, messages = llmService.chatWithLlm(request.userId, request.chatId, request.message)
+    chat_id, messages = llmService.chatWithLlm(request.userId, request.chatId, request.modelName, request.message)
     return ChatResponse(userId=request.userId, chatId = chat_id, messages=messages)
 
 @app.post("/chat/stream/")
 async def say_hello_stream(request: ChatRequest, llmService: LlmService = Depends(getLlmService)):
     def event_generator():
-        for chat_id, msg in llmService.chatWithLlmStream(request.userId, request.chatId, request.message):
+        for chat_id, msg in llmService.chatWithLlmStream(request.userId, request.chatId, request.modelName, request.message):
             if msg is None:
                 continue
             payload = ChatResponse(

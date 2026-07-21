@@ -95,7 +95,7 @@
         <div class="flex items-center gap-2.5 bg-white/80 pl-2 pr-3.5 py-1.5 rounded-full border border-black/5 shadow-sm">
           <span class="flex h-6 w-6 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-xs">✦</span>
           <span class="text-sm font-bold text-indigo-600 tracking-wide">
-            {{ chatService.selectedModelKey() || 'None Chosen' }}
+            {{ chatService.selectedModel().name || 'None Chosen' }}
           </span>
         </div>
       </header>
@@ -150,7 +150,7 @@
                 <button type="button" (click)="onToggleModelMenu()"
                   class="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200/70 border border-black/5 rounded-full h-9 pl-2.5 pr-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 text-neutral-700 max-w-[170px] cursor-pointer transition-colors">
                   <span class="flex h-4 w-4 shrink-0 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[9px]">✦</span>
-                  <span class="truncate">{{ chatService.selectedModelKey() || 'Select model' }}</span>
+                  <span class="truncate">{{ chatService.selectedModel().name || 'Select model' }}</span>
                   <svg class="shrink-0 text-neutral-400 transition-transform" [class.rotate-180]="isModelMenuOpen()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
@@ -174,7 +174,7 @@
                       <span class="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">{{ m.badge }}</span>
                       }
                     </span>
-                    @if (chatService.selectedModelKey() === m.modelKey) {
+                    @if (chatService.selectedModel().modelKey === m.modelKey) {
                     <svg class="shrink-0 text-indigo-500" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
@@ -193,7 +193,7 @@
                       <span class="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">{{ m.badge }}</span>
                       }
                     </span>
-                    @if (chatService.selectedModelKey() === m.modelKey) {
+                    @if (chatService.selectedModel().modelKey === m.modelKey) {
                     <svg class="shrink-0 text-indigo-500" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
@@ -225,7 +225,7 @@
           </div>
 
           <div class="text-xs text-neutral-400 font-mono tracking-normal text-center">
-            SageGPT is AI. Please make sure to check the results.
+            SageGPT is AI and can make mistakes. Please double-check responses.
           </div>
         </form>
       </footer>
