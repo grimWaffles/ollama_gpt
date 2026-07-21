@@ -1,13 +1,36 @@
-import { inject, Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import {inject, Injectable, signal} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
 
-export interface ModelInfo { id: number; name: string; modelKey: string; badge?: string}
-export interface ChatMessage { role: 'user' | 'assistant' | string; content: string; }
-export interface ChatRequest { userId: number; chatId: number; message: string; }
-export interface ChatResponse { userId: number; chatId: number; messages: ChatMessage[]; }
-export interface ConversationEntity { chatId: number; chatName: string; }
+export interface ModelInfo {
+  id: number;
+  name: string;
+  modelKey: string;
+  badge?: string
+}
 
-@Injectable({ providedIn: 'root' })
+export interface ChatMessage {
+  role: 'user' | 'assistant' | string;
+  content: string;
+}
+
+export interface ChatRequest {
+  userId: number;
+  chatId: number;
+  message: string;
+}
+
+export interface ChatResponse {
+  userId: number;
+  chatId: number;
+  messages: ChatMessage[];
+}
+
+export interface ConversationEntity {
+  chatId: number;
+  chatName: string;
+}
+
+@Injectable({providedIn: 'root'})
 export class ChatService {
   private http = inject(HttpClient);
   private apiUrl = 'http://localhost:8000';
@@ -36,7 +59,7 @@ export class ChatService {
     return setInterval(() => {
       this.thinkingStatus.set(this.thinkingPhrases[index % this.thinkingPhrases.length]);
       index++;
-    }, 1800);
+    }, 2500);
   }
 
   loadConversations(): void {
@@ -64,7 +87,7 @@ export class ChatService {
    */
   sendMessage(messageContent: string): void {
     // Optimistic UI Update: immediately render what the user wrote
-    const userMsg: ChatMessage = { role: 'user', content: messageContent };
+    const userMsg: ChatMessage = {role: 'user', content: messageContent};
     this.messages.update(prev => [...prev, userMsg]);
 
     const intervalId = this.startThinkingAnimation();
@@ -93,6 +116,74 @@ export class ChatService {
         console.error('Failed to post message context:', err);
       }
     });
+  }
+
+  /*
+   * STREAMING PIPELINE
+   * Uses fetch + ReadableStream to consume Server-Sent Events from /chat/stream/
+   */
+  async sendMessageStream(messageContent: string): Promise<void> {
+    const userMsg: ChatMessage = {role: 'user', content: messageContent};
+    this.messages.update(prev => [...prev, userMsg]);
+
+    const intervalId = this.startThinkingAnimation();
+
+    const body: ChatRequest = {
+      userId: this.userId(),
+      chatId: this.currentChatId(),
+      message: messageContent
+    };
+
+    try {
+      const response = await fetch(`${this.apiUrl}/chat/stream/`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let firstChunkReceived = false;
+
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, {stream: true});
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const jsonStr = line.slice(6).trim();
+          if (!jsonStr) continue;
+
+          if (!firstChunkReceived) {
+            firstChunkReceived = true;
+            clearInterval(intervalId);
+            this.isThinking.set(false);
+          }
+
+          const res: ChatResponse = JSON.parse(jsonStr);
+          this.currentChatId.set(res.chatId);
+          const animated = res.messages.map(m => ({...m, animate: true}));
+          this.messages.update(prev => [...prev, ...animated]);
+        }
+      }
+
+      clearInterval(intervalId);
+      this.isThinking.set(false);
+      this.loadConversations();
+    } catch (err) {
+      clearInterval(intervalId);
+      this.isThinking.set(false);
+      console.error('Failed to stream message context:', err);
+    }
   }
 
   startNewChat(): void {

@@ -1,17 +1,19 @@
 import {Component, inject, OnInit, signal, effect, viewChild, ElementRef, ViewChild, computed} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ChatService } from '../../chat.service';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {ChatService} from '../../chat.service';
+import {ChatMessageComponent} from '../../components/chat-message';
 
 @Component({
   selector: 'app-chat-interface',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ChatMessageComponent],
   templateUrl: './home-component.html'
 })
 export class HomeComponent implements OnInit {
   protected chatService = inject(ChatService);
   userInput = signal<string>('');
+  streamingEnabled = signal<boolean>(true);
 
   // Target viewport selector anchor reference
   private scrollContainer = viewChild<ElementRef<HTMLDivElement>>('scrollFrame');
@@ -34,7 +36,7 @@ export class HomeComponent implements OnInit {
   @ViewChild('chatListFrame') chatListFrame!: ElementRef;
 
   ngAfterViewChecked() {
-    this.scrollFrame?.nativeElement.scrollTo({ top: this.scrollFrame.nativeElement.scrollHeight });
+    this.scrollFrame?.nativeElement.scrollTo({top: this.scrollFrame.nativeElement.scrollHeight});
   }
 
   private scrollToBottom(): void {
@@ -51,7 +53,7 @@ export class HomeComponent implements OnInit {
 
   onSelectConversation(id: number): void {
     this.chatService.loadChatMessages(id);
-    this.chatListFrame?.nativeElement.scrollTo({ top: this.chatListFrame.nativeElement.scrollHeight });
+    this.chatListFrame?.nativeElement.scrollTo({top: this.chatListFrame.nativeElement.scrollHeight});
   }
 
   onNewChat(): void {
@@ -62,12 +64,19 @@ export class HomeComponent implements OnInit {
     this.chatService.selectedModelKey.set(model.modelKey);
   }
 
+  onToggleStreaming(): void {
+    this.streamingEnabled.update(v => !v);
+  }
+
   submitMessage(): void {
     const text = this.userInput().trim();
     if (!text || this.chatService.isThinking()) return;
 
-    // Directly fires the standard complete HTTP call transaction
-    this.chatService.sendMessage(text);
+    if (this.streamingEnabled()) {
+      this.chatService.sendMessageStream(text);
+    } else {
+      this.chatService.sendMessage(text);
+    }
     this.userInput.set('');
   }
 
@@ -96,9 +105,43 @@ export class HomeComponent implements OnInit {
     return all.find(m => m.modelKey === key)?.name ?? '';
   });
 
+  copyMessage(content: string): void {
+    navigator.clipboard.writeText(content);
+  }
+
+  retryMessage(index: number): void {
+    if (this.chatService.isThinking()) return;
+    const messages = this.chatService.messages();
+    let userContent = '';
+    for (let i = index - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        userContent = messages[i].content;
+        break;
+      }
+    }
+    if (!userContent) return;
+
+    if (this.streamingEnabled()) {
+      this.chatService.sendMessageStream(userContent);
+    } else {
+      this.chatService.sendMessage(userContent);
+    }
+  }
+
   // Bottom action triggers
-  onTriggerSettings() { console.log('Settings triggered'); }
-  onTriggerProjects() { console.log('Projects triggered'); }
-  onTriggerReset() { this.chatService.startNewChat(); }
-  onTriggerAbout() { console.log('About context window opened'); }
+  onTriggerSettings() {
+    console.log('Settings triggered');
+  }
+
+  onTriggerProjects() {
+    console.log('Projects triggered');
+  }
+
+  onTriggerReset() {
+    this.chatService.startNewChat();
+  }
+
+  onTriggerAbout() {
+    console.log('About context window opened');
+  }
 }

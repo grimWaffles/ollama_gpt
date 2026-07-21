@@ -34,15 +34,9 @@ class LlmService:
             "Only call tools when they are actually needed."
         )
 
-    def chatWithLlm(
-            self,
-            user_id: int,
-            chat_id: int,
-            message: str,
-    ) -> tuple[int, List[ChatMessage]]:
+    def chatWithLlm(self,user_id: int, chat_id: int, message: str) -> tuple[int, List[ChatMessage]]:
 
         conversation: List[ChatMessage] = []
-
         try:
             # --- New chat: assign the next available chat_id ---
             if not chat_id or chat_id == 0:
@@ -125,6 +119,87 @@ class LlmService:
         except Exception as e:
             print(f"Error: {e}")
             return chat_id, []
+
+    def chatWithLlmStream(self, user_id: int, chat_id: int, message: str):
+        conversation: List[ChatMessage] = []
+        try:
+            if not chat_id or chat_id == 0:
+                max_chat_id = self.repo.get_max_chat_id()
+                chat_id = self.repo.create_conversation(
+                    SimpleNamespace(
+                        chatId=chat_id,
+                        userId=user_id,
+                        chatName=f"Conversation #{max_chat_id + 1}",
+                        created_at=datetime.utcnow(),
+                    )
+                )
+
+            rows = self.repo.get_messages(chat_id)
+
+            last_sequence_no = 0
+            for row in rows:
+                _, _, role, msg_text, sequence_no, _ = row
+                conversation.append(ChatMessage(role=role, content=msg_text))
+                last_sequence_no = max(last_sequence_no, sequence_no)
+
+            if not conversation:
+                conversation.append(
+                    ChatMessage(
+                        role="system",
+                        content=self.starter_system_prompt,
+                    )
+                )
+
+            conversation.append(
+                ChatMessage(
+                    role="user",
+                    content=message,
+                )
+            )
+
+            _, model_name = self.cloud_models[1]
+
+            agent = OllamaAgent(
+                model_name=model_name,
+                tools=[],
+                system_prompt=self.starter_system_prompt,
+            )
+
+            now = datetime.utcnow()
+            last_sequence_no += 1
+            self.repo.create_message(
+                SimpleNamespace(
+                    id=0,
+                    chatId=chat_id,
+                    role="user",
+                    message=message,
+                    sequenceNo=last_sequence_no,
+                    created_at=now,
+                )
+            )
+
+            last_msg = None
+
+            for new_msg in agent.stream(conversation):
+                last_msg = new_msg
+                yield chat_id, new_msg
+
+            if last_msg is not None:
+                last_sequence_no += 1
+                self.repo.create_message(
+                    SimpleNamespace(
+                        id=0,
+                        chatId=chat_id,
+                        role=last_msg.role,
+                        message=last_msg.content,
+                        sequenceNo=last_sequence_no,
+                        created_at=datetime.utcnow(),
+                    )
+                )
+
+        except Exception as e:
+            print(f"Error: {e}")
+            yield chat_id, None
 
     def getConversation(self,user_id):
         user_conversations = self.repo.get_user_conversations(user_id)

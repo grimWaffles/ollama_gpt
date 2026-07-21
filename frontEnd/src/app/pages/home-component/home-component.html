@@ -106,31 +106,12 @@
         @for (msg of chatService.messages(); track $index) {
 
         <!-- Chat bubble row: right-aligned + indigo for user, left-aligned + white/grey glass for assistant -->
-        <div class="flex w-full" [class.justify-end]="msg.role === 'user'" [class.justify-start]="msg.role !== 'user'">
-          <div
-            [class.bg-indigo-600]="msg.role === 'user'"
-            [class.text-white]="msg.role === 'user'"
-            [class.rounded-br-md]="msg.role === 'user'"
-            [class.bg-white-80]="msg.role !== 'user'"
-            [class.text-neutral-800]="msg.role !== 'user'"
-            [class.rounded-bl-md]="msg.role !== 'user'"
-            [class.border]="msg.role !== 'user'"
-            [class.border-black-5]="msg.role !== 'user'"
-            class="max-w-[75%] rounded-3xl px-4 py-3 shadow-sm">
-
-            <div
-              class="text-[10px] uppercase tracking-wider font-bold mb-1.5"
-              [class.text-indigo-100]="msg.role === 'user'"
-              [class.text-neutral-400]="msg.role !== 'user'">
-              {{ msg.role === 'user' ? 'User Identity' : 'Sage Engine' }}
-            </div>
-
-            <div
-              class="whitespace-pre-wrap break-words text-base leading-relaxed tracking-normal font-normal selection:bg-indigo-300/40">
-              {{ msg.content }}
-            </div>
-          </div>
-        </div>
+        <app-chat-message
+          [msg]="msg"
+          (copy)="copyMessage($event)"
+          (retry)="retryMessage($index)"
+        />
+          <br>
         }
 
         <!-- Thinking Prompt Indicator Panel -->
@@ -222,6 +203,17 @@
                 </div>
                 }
               </div>
+
+              <!-- Streaming Toggle -->
+              <button type="button" (click)="onToggleStreaming()"
+                [class.bg-indigo-100]="streamingEnabled()"
+                [class.text-indigo-600]="streamingEnabled()"
+                [class.bg-neutral-100]="!streamingEnabled()"
+                [class.text-neutral-400]="!streamingEnabled()"
+                class="flex items-center gap-1.5 h-9 px-3 rounded-full border border-black/5 text-xs font-bold transition-colors cursor-pointer">
+                <span class="flex h-2 w-2 rounded-full" [class.bg-indigo-500]="streamingEnabled()" [class.bg-neutral-300]="!streamingEnabled()"></span>
+                Stream
+              </button>
 
               <!-- Send Button Anchor -->
               <button type="submit" [disabled]="!userInput().trim() || chatService.isThinking()"
