@@ -1,77 +1,77 @@
 <!-- Friendly rounded typeface: add to index.html <head> —
      <link rel="preconnect" href="https://fonts.googleapis.com">
      <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet"> -->
-<div class="relative flex h-screen w-screen overflow-hidden bg-neutral-200 text-neutral-900 font-['Nunito',_sans-serif] antialiased text-[15px]">
+<div class="relative flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900 font-['Nunito',_sans-serif] antialiased text-[15px]">
 
-  <!-- Soft neutral background wash -->
-  <div class="absolute inset-0 bg-gradient-to-br from-white via-neutral-200 to-neutral-300 pointer-events-none"></div>
-  <div class="absolute -top-32 -left-32 w-96 h-96 bg-indigo-200/30 rounded-full blur-3xl pointer-events-none"></div>
-  <div class="absolute -bottom-32 -right-24 w-96 h-96 bg-indigo-100/40 rounded-full blur-3xl pointer-events-none"></div>
+  <!-- Bright gradient-mesh background -->
+  <div class="absolute inset-0 bg-gradient-to-br from-white via-sky-50 to-violet-50 pointer-events-none"></div>
+  <div class="absolute -top-40 -left-32 w-[32rem] h-[32rem] bg-indigo-300/40 rounded-full blur-[100px] pointer-events-none"></div>
+  <div class="absolute top-1/3 -right-40 w-[28rem] h-[28rem] bg-fuchsia-300/35 rounded-full blur-[100px] pointer-events-none"></div>
+  <div class="absolute -bottom-40 left-1/4 w-[30rem] h-[30rem] bg-sky-300/35 rounded-full blur-[110px] pointer-events-none"></div>
 
   <!-- Main Container Layout Wrap -->
   <div class="flex w-full h-full p-5 gap-5 box-border z-10">
 
     <!-- SIDEBAR: Frosted Glass Panel -->
     <aside
-      class="w-76 flex flex-col rounded-[2rem] border border-black/5 bg-white/60 backdrop-blur-2xl shadow-xl transition-all">
+      class="w-76 flex flex-col rounded-[2rem] border border-white/70 bg-white/60 backdrop-blur-3xl shadow-[0_8px_32px_rgba(99,102,241,0.12),inset_0_1px_0_rgba(255,255,255,0.6)] transition-all">
 
       <!-- App Identity Header -->
       <div class="pt-6 px-5 pb-3">
         <h1
-          class="text-2xl font-['Quicksand',_sans-serif] font-bold tracking-tight text-neutral-800 flex items-center gap-2">
+          class="text-2xl font-['Quicksand',_sans-serif] font-bold tracking-tight text-slate-800 flex items-center gap-2">
           <span class="text-indigo-500 font-extrabold text-lg">✦</span> SageGPT
         </h1>
       </div>
 
       <!-- New Chat Button Trigger Area -->
-      <div class="px-4 pb-4 border-b border-black/5">
+      <div class="px-4 pb-4 border-b border-white/70">
         <button (click)="onNewChat()"
-          class="w-full py-3 px-4 rounded-full border border-black/5 bg-white/70 hover:bg-white text-neutral-700 hover:text-indigo-600 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer shadow-sm">
+          class="w-full py-3 px-4 rounded-full border border-white/70 bg-white/70 hover:bg-white/90 text-slate-700 hover:text-indigo-600 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer shadow-sm">
           <span class="text-base font-light text-indigo-500">+</span> New Conversation
         </button>
       </div>
 
       <!-- Historical Navigation Stack Layout -->
-      <!-- #chatListFrame: scroll this to bottom whenever conversations() grows or a new conversation is selected -->
       <div #chatListFrame class="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin">
         @for (chat of chatService.conversations(); track chat.chatId) {
         <button (click)="onSelectConversation(chat.chatId)"
           [class.bg-indigo-50]="chatService.currentChatId() === chat.chatId"
           [class.text-indigo-700]="chatService.currentChatId() === chat.chatId"
           [class.border-indigo-100]="chatService.currentChatId() === chat.chatId"
-          class="w-full text-left py-3 px-4 rounded-2xl text-sm font-medium transition-all text-neutral-500 border border-transparent hover:text-neutral-800 hover:bg-white/70 flex items-center justify-between cursor-pointer group truncate">
+          class="w-full text-left py-3 px-4 rounded-2xl text-sm font-medium transition-all text-slate-500 border border-transparent hover:text-slate-800 hover:bg-white/70 flex items-center justify-between cursor-pointer group truncate">
           <span class="truncate pr-2">{{ chat.chatName }}</span>
           <span class="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400 font-mono">/</span>
         </button>
         } @empty {
-        <div class="text-xs text-neutral-400 text-center py-8">No prior threads saved.</div>
+        <div class="text-xs text-slate-400 text-center py-8">No prior threads saved.</div>
         }
       </div>
 
-      <!-- UTILITY FOOTER: Refined SVG icon rail -->
-      <div class="p-3 border-t border-black/5 grid grid-cols-4 gap-1 bg-black/[0.02] rounded-b-[2rem]">
+      <!-- UTILITY FOOTER -->
+      <div class="p-3 border-t border-white/70 grid grid-cols-4 gap-1 bg-slate-900/[0.02] rounded-b-[2rem]">
         <button (click)="onTriggerSettings()" title="Settings"
-          class="p-2.5 rounded-2xl text-neutral-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
+          class="p-2.5 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
         </button>
         <button (click)="onTriggerProjects()" title="Projects"
-          class="p-2.5 rounded-2xl text-neutral-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
+          class="p-2.5 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
           </svg>
         </button>
         <button (click)="onTriggerReset()" title="Reset Interface"
-          class="p-2.5 rounded-2xl text-neutral-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
+          class="p-2.5 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 12a9 9 0 1 0 3-6.7"></path>
             <path d="M3 4v5h5"></path>
           </svg>
         </button>
         <button (click)="onTriggerAbout()" title="About System"
-          class="p-2.5 rounded-2xl text-neutral-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
+          class="p-2.5 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="9"></circle>
             <line x1="12" y1="11" x2="12" y2="16"></line>
@@ -83,42 +83,38 @@
 
     <!-- MAIN CHAT INTERFACE WINDOW -->
     <main
-      class="flex-1 flex flex-col rounded-[2rem] border border-black/5 bg-white/60 backdrop-blur-2xl shadow-xl overflow-hidden">
+      class="flex-1 flex flex-col rounded-[2rem] border border-white/70 bg-white/50 backdrop-blur-3xl shadow-[0_8px_32px_rgba(99,102,241,0.12),inset_0_1px_0_rgba(255,255,255,0.6)] overflow-hidden">
 
       <!-- Top Window Navbar Header -->
-      <header class="h-16 border-b border-black/5 flex items-center justify-between px-6 bg-white/40">
+      <header class="h-16 border-b border-white/70 flex items-center justify-between px-6 bg-white/40">
         <div class="flex items-center gap-2.5">
-          <div class="text-sm text-neutral-500 font-semibold">Workspace Context</div>
+          <div class="text-sm text-slate-500 font-semibold">Workspace Context</div>
         </div>
 
-        <!-- Model Banner: friendly pill showing the active engine -->
-        <div class="flex items-center gap-2.5 bg-white/80 pl-2 pr-3.5 py-1.5 rounded-full border border-black/5 shadow-sm">
+        <!-- Model Banner -->
+        <div class="flex items-center gap-2.5 bg-white/80 pl-2 pr-3.5 py-1.5 rounded-full border border-white/70 shadow-sm">
           <span class="flex h-6 w-6 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-xs">✦</span>
           <span class="text-sm font-bold text-indigo-600 tracking-wide">
-            {{ chatService.selectedModel().name || 'None Chosen' }}
+            {{ chatService.selectedModel()?.name || 'None Chosen' }}
           </span>
         </div>
       </header>
 
       <!-- Message Scrolling Viewport Area -->
-      <!-- #scrollFrame: scroll this to bottom on new message, new conversation selection, or isThinking() toggling -->
-      <div #scrollFrame class="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin bg-black/[0.015]">
+      <div #scrollFrame class="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin">
         @for (msg of chatService.messages(); track $index) {
-
-        <!-- Chat bubble row: right-aligned + indigo for user, left-aligned + white/grey glass for assistant -->
-        <app-chat-message
-          [msg]="msg"
-          (copy)="copyMessage($event)"
-          (retry)="retryMessage($index)"
-        />
-          <br>
+          <app-chat-message
+            [msg]="msg"
+            (copy)="copyMessage($event)"
+            (retry)="retryMessage($index)">
+          </app-chat-message>
         }
 
         <!-- Thinking Prompt Indicator Panel -->
         @if (chatService.isThinking()) {
         <div class="flex w-full justify-start transition-all duration-200">
           <div
-            class="max-w-xs rounded-3xl rounded-bl-md p-4 border border-black/5 bg-white/80 text-neutral-400 text-xs flex items-center gap-3 shadow-sm">
+            class="max-w-xs rounded-3xl rounded-bl-md p-4 border border-white/70 bg-white/80 backdrop-blur-xl text-slate-400 text-xs flex items-center gap-3 shadow-sm">
             <span class="flex h-2 w-2 relative">
               <span
                 class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
@@ -130,28 +126,27 @@
         }
       </div>
 
-      <!-- Form Control Pad: shorter, more rounded, wraps text -->
-      <footer class="p-5 border-t border-black/5 bg-white/40 flex flex-col items-center">
+      <!-- Form Control Pad -->
+      <footer class="p-5 border-t border-white/70 bg-white/40 flex flex-col items-center">
         <form (ngSubmit)="submitMessage()" class="w-full max-w-xl flex flex-col gap-3">
 
           <div
-            class="relative w-full flex items-end bg-white/80 border border-black/5 focus-within:border-indigo-300 rounded-[1.75rem] p-2 transition-all shadow-sm backdrop-blur-md">
+            class="relative w-full flex items-end bg-white/80 border border-white/70 focus-within:border-indigo-300 rounded-[1.75rem] p-2 transition-all shadow-sm backdrop-blur-md">
 
-            <!-- Multi-line wrapping prompt input, wraps rather than growing wide -->
             <textarea [(ngModel)]="userInput" name="messageInput" rows="1" placeholder="Send a message to Sage..."
               (keydown.enter)="handleEnterKey($event)"
-              class="flex-1 bg-transparent border-0 ring-0 focus:outline-none placeholder-neutral-400 text-neutral-800 text-base py-2.5 px-3 resize-none max-h-36 min-h-[40px] scrollbar-none leading-normal break-words whitespace-pre-wrap">
+              class="flex-1 bg-transparent border-0 ring-0 focus:outline-none placeholder-slate-400 text-slate-800 text-base py-2.5 px-3 resize-none max-h-36 min-h-[40px] scrollbar-none leading-normal break-words whitespace-pre-wrap">
             </textarea>
 
-            <div class="flex items-center gap-2.5 pl-2.5 border-l border-black/5 h-10 mb-0.5">
+            <div class="flex items-center gap-2.5 pl-2.5 border-l border-white/70 h-10 mb-0.5">
 
-              <!-- MODEL SELECTOR: custom Claude-style dropdown with badges (native <option> can't hold styled chips) -->
+              <!-- MODEL SELECTOR -->
               <div class="relative flex items-center h-9">
                 <button type="button" (click)="onToggleModelMenu()"
-                  class="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200/70 border border-black/5 rounded-full h-9 pl-2.5 pr-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 text-neutral-700 max-w-[170px] cursor-pointer transition-colors">
+                  class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200/70 border border-white/70 rounded-full h-9 pl-2.5 pr-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 text-slate-700 max-w-[170px] cursor-pointer transition-colors">
                   <span class="flex h-4 w-4 shrink-0 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[9px]">✦</span>
-                  <span class="truncate">{{ chatService.selectedModel().name || 'Select model' }}</span>
-                  <svg class="shrink-0 text-neutral-400 transition-transform" [class.rotate-180]="isModelMenuOpen()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <span class="truncate">{{ chatService.selectedModel()?.name || 'Select model' }}</span>
+                  <svg class="shrink-0 text-slate-400 transition-transform" [class.rotate-180]="isModelMenuOpen()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </button>
@@ -161,20 +156,20 @@
                 <button type="button" (click)="onToggleModelMenu()" aria-label="Close model menu"
                   class="fixed inset-0 z-10 cursor-default" tabindex="-1"></button>
 
-                <div class="absolute bottom-full mb-2 right-0 w-72 max-h-80 overflow-y-auto bg-white rounded-2xl border border-black/5 shadow-xl p-1.5 z-20 scrollbar-thin">
+                <div class="absolute bottom-full mb-2 right-0 w-72 max-h-80 overflow-y-auto bg-white/90 backdrop-blur-2xl rounded-2xl border border-white/70 shadow-xl p-1.5 z-20 scrollbar-thin">
 
-                  <div class="px-2.5 pt-2 pb-1 text-[10px] uppercase tracking-wider font-bold text-neutral-400">Local</div>
+                  <div class="px-2.5 pt-2 pb-1 text-[10px] uppercase tracking-wider font-bold text-slate-400">Local</div>
                   @for (m of chatService.localModels(); track m.id) {
                   <button type="button" (click)="onModelChange(m); onToggleModelMenu()"
-                    class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-neutral-100 text-left transition-colors cursor-pointer">
+                    class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-100 text-left transition-colors cursor-pointer">
                     <span class="flex h-6 w-6 shrink-0 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[10px]">✦</span>
                     <span class="flex-1 min-w-0 flex items-center gap-2">
-                      <span class="text-sm font-semibold text-neutral-700 truncate">{{ m.name }}</span>
+                      <span class="text-sm font-semibold text-slate-700 truncate">{{ m.name }}</span>
                       @if (m.badge) {
                       <span class="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">{{ m.badge }}</span>
                       }
                     </span>
-                    @if (chatService.selectedModel().modelKey === m.modelKey) {
+                    @if (chatService.selectedModel()?.modelKey === m.modelKey) {
                     <svg class="shrink-0 text-indigo-500" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
@@ -182,18 +177,18 @@
                   </button>
                   }
 
-                  <div class="px-2.5 pt-3 pb-1 text-[10px] uppercase tracking-wider font-bold text-neutral-400">Cloud</div>
+                  <div class="px-2.5 pt-3 pb-1 text-[10px] uppercase tracking-wider font-bold text-slate-400">Cloud</div>
                   @for (m of chatService.cloudModels(); track m.id) {
                   <button type="button" (click)="onModelChange(m); onToggleModelMenu()"
-                    class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-neutral-100 text-left transition-colors cursor-pointer">
+                    class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-100 text-left transition-colors cursor-pointer">
                     <span class="flex h-6 w-6 shrink-0 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[10px]">✦</span>
                     <span class="flex-1 min-w-0 flex items-center gap-2">
-                      <span class="text-sm font-semibold text-neutral-700 truncate">{{ m.name }}</span>
+                      <span class="text-sm font-semibold text-slate-700 truncate">{{ m.name }}</span>
                       @if (m.badge) {
                       <span class="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">{{ m.badge }}</span>
                       }
                     </span>
-                    @if (chatService.selectedModel().modelKey === m.modelKey) {
+                    @if (chatService.selectedModel()?.modelKey === m.modelKey) {
                     <svg class="shrink-0 text-indigo-500" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
@@ -208,24 +203,24 @@
               <button type="button" (click)="onToggleStreaming()"
                 [class.bg-indigo-100]="streamingEnabled()"
                 [class.text-indigo-600]="streamingEnabled()"
-                [class.bg-neutral-100]="!streamingEnabled()"
-                [class.text-neutral-400]="!streamingEnabled()"
-                class="flex items-center gap-1.5 h-9 px-3 rounded-full border border-black/5 text-xs font-bold transition-colors cursor-pointer">
-                <span class="flex h-2 w-2 rounded-full" [class.bg-indigo-500]="streamingEnabled()" [class.bg-neutral-300]="!streamingEnabled()"></span>
+                [class.bg-slate-100]="!streamingEnabled()"
+                [class.text-slate-400]="!streamingEnabled()"
+                class="flex items-center gap-1.5 h-9 px-3 rounded-full border border-white/70 text-xs font-bold transition-colors cursor-pointer">
+                <span class="flex h-2 w-2 rounded-full" [class.bg-indigo-500]="streamingEnabled()" [class.bg-slate-300]="!streamingEnabled()"></span>
                 Stream
               </button>
 
               <!-- Send Button Anchor -->
               <button type="submit" [disabled]="!userInput().trim() || chatService.isThinking()"
-                class="h-9 w-9 flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-20 disabled:hover:bg-indigo-600 rounded-full transition-all active:scale-95 cursor-pointer shadow-sm">
+                class="h-9 w-9 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-500 hover:from-indigo-400 hover:to-violet-400 text-white disabled:opacity-20 disabled:hover:from-indigo-500 disabled:hover:to-violet-500 rounded-full transition-all active:scale-95 shadow-[0_4px_14px_rgba(99,102,241,0.4)] cursor-pointer">
                 <span class="font-bold text-sm">↑</span>
               </button>
             </div>
 
           </div>
 
-          <div class="text-xs text-neutral-400 font-mono tracking-normal text-center">
-            SageGPT is AI and can make mistakes. Please double-check responses.
+          <div class="text-xs text-slate-400 font-mono tracking-normal text-center">
+            SageGPT is AI. Please make sure to check the results.
           </div>
         </form>
       </footer>
