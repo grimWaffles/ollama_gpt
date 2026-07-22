@@ -1,6 +1,6 @@
 from typing import List, Any
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Form, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from models.chat_models import ChatRequest, ChatResponse, ModelInfo, ChatMessage
 from models.conversation_entity import ConversationEntity
@@ -26,18 +26,32 @@ async def root(name_of_user:str,demo_service: DemoService = Depends(getDemoServi
     return {"message": demo_service.say_hello(name_of_user)}
 
 @app.post("/chat/", response_model=ChatResponse)
-async def say_hello(request: ChatRequest, llmService: LlmService = Depends(getLlmService)):
-    chat_id, messages = llmService.chatWithLlm(request.userId, request.chatId, request.modelName, request.message)
-    return ChatResponse(userId=request.userId, chatId = chat_id, messages=messages)
+async def say_hello(
+    userId: int = Form(...),
+    chatId: int = Form(...),
+    message: str = Form(...),
+    modelName: str = Form(...),
+    files: List[UploadFile] = File(default=[]),
+    llmService: LlmService = Depends(getLlmService)
+):
+    chat_id, messages = llmService.chatWithLlm(userId, chatId, modelName, message)
+    return ChatResponse(userId=userId, chatId=chat_id, messages=messages)
 
 @app.post("/chat/stream/")
-async def say_hello_stream(request: ChatRequest, llmService: LlmService = Depends(getLlmService)):
+async def say_hello_stream(
+        userId: int = Form(...),
+        chatId: int = Form(...),
+        message: str = Form(...),
+        modelName: str = Form(...),
+        files: List[UploadFile] = File(default=[]),
+        llmService: LlmService = Depends(getLlmService)
+):
     def event_generator():
-        for chat_id, msg in llmService.chatWithLlmStream(request.userId, request.chatId, request.modelName, request.message):
+        for chat_id, msg in llmService.chatWithLlmStream(userId, chatId, modelName, message):
             if msg is None:
                 continue
             payload = ChatResponse(
-                userId=request.userId,
+                userId=userId,
                 chatId=chat_id,
                 messages=[msg],
             )

@@ -130,6 +130,46 @@
       <footer class="p-5 border-t border-white/70 bg-white/40 flex flex-col items-center">
         <form (ngSubmit)="submitMessage()" class="w-full max-w-xl flex flex-col gap-3">
 
+          <!-- Hidden file input driving the attach button below -->
+          <input
+            #fileInput
+            type="file"
+            multiple
+            class="hidden"
+            (change)="onFilesSelected($event)"
+          />
+
+          <!-- Staged attachments — shown above the composer once files are picked, cleared on send -->
+          @if (selectedFiles().length > 0) {
+          <div class="w-full flex flex-wrap gap-2 px-1">
+            @for (attachment of selectedFiles(); track attachment.file.name + $index) {
+            <div
+              class="relative flex items-center gap-2 rounded-2xl border border-white/70 bg-white/80 backdrop-blur-md pl-2 pr-2.5 py-1.5 shadow-sm">
+              @if (attachment.previewUrl) {
+              <img [src]="attachment.previewUrl" [alt]="attachment.file.name" class="h-8 w-8 object-cover rounded-xl" />
+              } @else {
+              <span class="flex h-8 w-8 shrink-0 rounded-xl bg-indigo-50 text-indigo-400 items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>
+              </span>
+              }
+              <div class="flex flex-col leading-tight">
+                <span class="text-xs font-semibold text-slate-700 truncate max-w-[9rem]">{{ attachment.file.name }}</span>
+                <span class="text-[10px] text-slate-400">{{ formatSize(attachment.file.size) }}</span>
+              </div>
+              <button type="button" (click)="removeAttachment($index)" title="Remove"
+                class="ml-1 h-5 w-5 flex items-center justify-center rounded-full text-slate-400 hover:text-red-500 hover:bg-black/5 transition-colors cursor-pointer">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 6 6 18"></path>
+                  <path d="M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            }
+          </div>
+          }
+
           <div
             class="relative w-full flex items-end bg-white/80 border border-white/70 focus-within:border-indigo-300 rounded-[1.75rem] p-2 transition-all shadow-sm backdrop-blur-md">
 
@@ -139,6 +179,14 @@
             </textarea>
 
             <div class="flex items-center gap-2.5 pl-2.5 border-l border-white/70 h-10 mb-0.5">
+
+              <!-- Attach Button -->
+              <button type="button" (click)="onAttachClick()" title="Attach files"
+                class="flex items-center justify-center h-9 w-9 rounded-full border border-white/70 text-slate-400 hover:text-indigo-600 hover:bg-white/70 transition-colors cursor-pointer">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>
+              </button>
 
               <!-- MODEL SELECTOR -->
               <div class="relative flex items-center h-9">
@@ -211,7 +259,7 @@
               </button>
 
               <!-- Send Button Anchor -->
-              <button type="submit" [disabled]="!userInput().trim() || chatService.isThinking()"
+              <button type="submit" [disabled]="(!userInput().trim() && selectedFiles().length === 0) || chatService.isThinking()"
                 class="h-9 w-9 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-500 hover:from-indigo-400 hover:to-violet-400 text-white disabled:opacity-20 disabled:hover:from-indigo-500 disabled:hover:to-violet-500 rounded-full transition-all active:scale-95 shadow-[0_4px_14px_rgba(99,102,241,0.4)] cursor-pointer">
                 <span class="font-bold text-sm">↑</span>
               </button>

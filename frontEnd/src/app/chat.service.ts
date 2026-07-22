@@ -7,10 +7,25 @@ export interface ModelInfo {
   modelKey: string;
   badge?: string
 }
+//** A file staged in the composer, not yet sent. */
+export interface PendingAttachment {
+  file: File;
+  previewUrl?: string;
+}
+
+export interface ChatAttachment {
+  name: string;
+  size: number;
+  type: string;
+  /** Local object URL for image previews. Only ever set client-side; never sent to / returned from the API. */
+  previewUrl?: string;
+}
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | string;
   content: string;
+  animate?: boolean;
+  attachments?: ChatAttachment[];
 }
 
 export interface ChatRequest {
@@ -52,6 +67,38 @@ export class ChatService {
     'Thinking...', 'Contemplating...', 'Analyzing variables...',
     'Formulating response...', 'Synthesizing knowledge...', 'Consulting neural map...'
   ];
+
+   /**
+   * Builds the metadata shown in the chat bubble for files the user attached.
+   * Creates local object URLs for images so they can be previewed inline;
+   * these are never uploaded — only the underlying File objects are sent to the API.
+   */
+  private toAttachments(files: File[]): ChatAttachment[] | undefined {
+    if (!files.length) return undefined;
+    return files.map(file => ({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+    }));
+  }
+
+  /**
+   * Builds a multipart/form-data payload for /chat/ and /chat/stream/.
+   * IMPORTANT: never set a Content-Type header manually alongside a FormData body —
+   * both HttpClient and fetch() will generate the correct multipart boundary themselves.
+   */
+  private buildFormData(message: string, files: File[]): FormData {
+    const formData = new FormData();
+    formData.append('userId', String(this.userId()));
+    formData.append('chatId', String(this.currentChatId()));
+    formData.append("modelName",String(this.selectedModel().modelKey))
+    formData.append('message', message);
+    for (const file of files) {
+      formData.append('files', file, file.name);
+    }
+    return formData;
+  }
 
   private startThinkingAnimation(): any {
     this.isThinking.set(true);
@@ -106,47 +153,28 @@ export class ChatService {
 
   /*
    * NON-STREAMING STANDARD HTTP POST PIPELINE
-   * Directly posts to your FastAPI endpoint and sets the full message list on return.
+   * `files` is optional so existing callers that only pass a string keep working.
    */
-  sendMessage(messageContent: string): void {
-    // Optimistic UI Update: immediately render what the user wrote
-    if (this.selectedModel().id == 0) {
-      this.selectedModel.set(
-        this.cloudModels() != null ? this.cloudModels()[0] : this.localModels() != null ? this.localModels()[0] : {
-          modelKey: "",
-          name: "",
-          id: 0,
-          badge: ""
-        }
-      )
-
-      if (this.selectedModel().id == 0) {
-        return
-      }
-    }
-
-    const userMsg: ChatMessage = {role: 'user', content: messageContent};
+  sendMessage(messageContent: string, files: File[] = []): void {
+    const userMsg: ChatMessage = {
+      role: 'user',
+      content: messageContent,
+      attachments: this.toAttachments(files)
+    };
     this.messages.update(prev => [...prev, userMsg]);
 
     const intervalId = this.startThinkingAnimation();
 
-    const body: ChatRequest = {
-      userId: this.userId(),
-      chatId: this.currentChatId(),
-      message: messageContent,
-      modelName: this.selectedModel().modelKey
-    };
+    const formData = this.buildFormData(messageContent, files);
 
-    this.http.post<ChatResponse>(`${this.apiUrl}/chat/`, body).subscribe({
+    this.http.post<ChatResponse>(`${this.apiUrl}/chat/`, formData).subscribe({
       next: (res) => {
         clearInterval(intervalId);
         this.isThinking.set(false);
 
-        // Update application contexts with full backend payloads
         this.currentChatId.set(res.chatId);
         this.messages.update(prev => [...prev, ...res.messages]);
 
-        // Refresh sidebar conversation logs
         this.loadConversations();
       },
       error: (err) => {
@@ -159,41 +187,27 @@ export class ChatService {
 
   /*
    * STREAMING PIPELINE
-   * Uses fetch + ReadableStream to consume Server-Sent Events from /chat/stream/
+   * Uses fetch + ReadableStream to consume Server-Sent Events from /chat/stream/.
+   * `files` is optional so existing callers that only pass a string keep working.
    */
-  async sendMessageStream(messageContent: string): Promise<void> {
-    if (this.selectedModel().id == 0) {
-      this.selectedModel.set(
-        this.cloudModels() != null ? this.cloudModels()[0] : this.localModels() != null ? this.localModels()[0] : {
-          modelKey: "",
-          name: "",
-          id: 0,
-          badge: ""
-        }
-      )
-
-      if (this.selectedModel().id == 0) {
-        return
-      }
-    }
-
-    const userMsg: ChatMessage = {role: 'user', content: messageContent};
+  async sendMessageStream(messageContent: string, files: File[] = []): Promise<void> {
+    const userMsg: ChatMessage = {
+      role: 'user',
+      content: messageContent,
+      attachments: this.toAttachments(files)
+    };
     this.messages.update(prev => [...prev, userMsg]);
 
     const intervalId = this.startThinkingAnimation();
 
-    const body: ChatRequest = {
-      userId: this.userId(),
-      chatId: this.currentChatId(),
-      message: messageContent,
-      modelName: this.selectedModel().modelKey
-    };
+    const formData = this.buildFormData(messageContent, files);
 
     try {
       const response = await fetch(`${this.apiUrl}/chat/stream/`, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
+        // No headers set here on purpose — the browser derives the correct
+        // `multipart/form-data; boundary=...` Content-Type from the FormData body.
+        body: formData
       });
 
       if (!response.ok || !response.body) {
@@ -206,10 +220,10 @@ export class ChatService {
       let firstChunkReceived = false;
 
       while (true) {
-        const {done, value} = await reader.read();
+        const { done, value } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, {stream: true});
+        buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n\n');
         buffer = lines.pop() ?? '';
 
@@ -226,7 +240,7 @@ export class ChatService {
 
           const res: ChatResponse = JSON.parse(jsonStr);
           this.currentChatId.set(res.chatId);
-          const animated = res.messages.map(m => ({...m, animate: true}));
+          const animated = res.messages.map(m => ({ ...m, animate: true }));
           this.messages.update(prev => [...prev, ...animated]);
         }
       }

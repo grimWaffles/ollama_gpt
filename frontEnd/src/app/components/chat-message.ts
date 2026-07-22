@@ -1,12 +1,7 @@
 import {Component, input, output, ChangeDetectionStrategy, computed, signal, effect, OnDestroy} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MarkdownComponent} from 'ngx-markdown';
-
-export interface ChatMessage {
-  role: 'user' | string;
-  content: string;
-  animate?: boolean;
-}
+import {ChatMessage} from '../chat.service';
 
 @Component({
   selector: 'app-chat-message',
@@ -47,7 +42,35 @@ export interface ChatMessage {
           >
             {{ isUser() ? 'You' : 'Sage Engine' }}
           </div>
-
+            @if (attachments().length > 0) {
+          <div class="flex flex-wrap gap-2 mb-2">
+            @for (attachment of attachments(); track attachment.name) {
+              @if (attachment.previewUrl) {
+                <img
+                  [src]="attachment.previewUrl"
+                  [alt]="attachment.name"
+                  class="h-20 w-20 object-cover rounded-xl border"
+                  [class.border-white-30]="isUser()"
+                  [class.border-black-5]="!isUser()"
+                />
+              } @else {
+                <div
+                  class="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs border"
+                  [class.bg-white-10]="isUser()"
+                  [class.border-white-30]="isUser()"
+                  [class.bg-black-5]="!isUser()"
+                  [class.border-black-5]="!isUser()"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                  </svg>
+                  <span class="font-medium truncate max-w-[10rem]">{{ attachment.name }}</span>
+                  <span class="opacity-60">{{ formatSize(attachment.size) }}</span>
+                </div>
+              }
+            }
+          </div>
+        }
           @if (msg().role === 'user') {
             <div class="whitespace-pre-wrap break-words text-base leading-relaxed">
               {{ msg().content }}
@@ -100,7 +123,7 @@ export class ChatMessageComponent implements OnDestroy {
   msg = input.required<ChatMessage>();
 
   isUser = computed(() => this.msg().role === 'user');
-
+  attachments = computed(() => this.msg().attachments ?? []);
   copy = output<string>();
   retry = output<void>();
 
@@ -144,5 +167,10 @@ export class ChatMessageComponent implements OnDestroy {
 
   onRetry(): void {
     this.retry.emit();
+  }
+  formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 }

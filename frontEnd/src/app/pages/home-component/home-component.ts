@@ -1,7 +1,7 @@
 import {Component, inject, OnInit, signal, effect, viewChild, ElementRef, ViewChild, computed} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {ChatService, ModelInfo} from '../../chat.service';
+import {ChatService, ModelInfo, PendingAttachment} from '../../chat.service';
 import {ChatMessageComponent} from '../../components/chat-message';
 
 @Component({
@@ -13,10 +13,13 @@ import {ChatMessageComponent} from '../../components/chat-message';
 export class HomeComponent implements OnInit {
   protected chatService = inject(ChatService);
   userInput = signal<string>('');
-  streamingEnabled = signal<boolean>(true);
+  streamingEnabled = signal<boolean>(false);
 
-  // Target viewport selector anchor reference
+   /** Files the user has attached via the paperclip button, staged until send. */
+  selectedFiles = signal<PendingAttachment[]>([]);
+
   private scrollContainer = viewChild<ElementRef<HTMLDivElement>>('scrollFrame');
+  private fileInputRef = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
   constructor() {
     // Automatically triggers execution thread anytime messages or thinking states change
@@ -68,16 +71,68 @@ export class HomeComponent implements OnInit {
     this.streamingEnabled.update(v => !v);
   }
 
+  /*
+   * FILE ATTACHMENT HANDLING
+   */
+
+  onAttachClick(): void {
+    this.fileInputRef()?.nativeElement.click();
+  }
+
+  onFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files ? Array.from(input.files) : [];
+
+    const pending: PendingAttachment[] = files.map(file => ({
+      file,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+    }));
+
+    this.selectedFiles.update(prev => [...prev, ...pending]);
+
+    // Reset so selecting the same file again still fires a change event.
+    input.value = '';
+  }
+
+  removeAttachment(index: number): void {
+    this.selectedFiles.update(prev => {
+      const target = prev[index];
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  private clearAttachments(): void {
+    this.selectedFiles().forEach(a => {
+      if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
+    });
+    this.selectedFiles.set([]);
+  }
+
+  formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  /*
+   * SUBMIT / RETRY — now files-aware
+   */
+
   submitMessage(): void {
     const text = this.userInput().trim();
-    if (!text || this.chatService.isThinking()) return;
+    const files = this.selectedFiles().map(a => a.file);
+
+    if ((!text && files.length === 0) || this.chatService.isThinking()) return;
 
     if (this.streamingEnabled()) {
-      this.chatService.sendMessageStream(text);
+      this.chatService.sendMessageStream(text, files);
     } else {
-      this.chatService.sendMessage(text);
+      this.chatService.sendMessage(text, files);
     }
+
     this.userInput.set('');
+    this.clearAttachments();
   }
 
   handleEnterKey(event: Event): void {
