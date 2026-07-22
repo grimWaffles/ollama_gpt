@@ -3,7 +3,7 @@ import psycopg2
 from uuid import UUID
 from datetime import datetime
 from dotenv import load_dotenv
-
+from psycopg2.extras import Json
 from models.conversation_entity import ConversationEntity
 
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
@@ -141,21 +141,32 @@ class ConversationRepository:
             raise
 
     # --------------- Message CRUD ---------------
+
     def create_message(self, message):
         query = """
-                INSERT INTO messages (chat_id, role, message, sequence_no, created_at)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO messages (chat_id,
+                                      role,
+                                      message,
+                                      attachments,
+                                      sequence_no,
+                                      created_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
                 """
+
         try:
             with self.connection.cursor() as cursor:
-                cursor.execute(query, (
-                    message.chatId,
-                    message.role,
-                    message.message,
-                    message.sequenceNo,
-                    message.created_at
-                ))
+                cursor.execute(
+                    query,
+                    (
+                        message.chatId,
+                        message.role,
+                        message.message,
+                        Json(message.attachments) if message.attachments is not None else None,
+                        message.sequenceNo,
+                        message.created_at,
+                    ),
+                )
                 new_id = cursor.fetchone()[0]
 
             self.connection.commit()
@@ -168,30 +179,54 @@ class ConversationRepository:
 
     def get_messages(self, chat_id: int):
         query = """
-                SELECT id, chat_id, role, message, sequence_no, created_at
+                SELECT id, 
+                       chat_id, 
+                       role, 
+                       message, 
+                       attachments, 
+                       sequence_no, 
+                       created_at
                 FROM messages
                 WHERE chat_id = %s
-                ORDER BY sequence_no \
+                ORDER BY sequence_no 
                 """
+
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute(query, (chat_id,))
                 return cursor.fetchall()
+
         except Exception as e:
             print(f"Error fetching messages for chat {chat_id}: {e}")
             self.connection.rollback()
             return []
 
-    def update_message(self, message_id: int, new_message: str):
+    def update_message(
+            self,
+            message_id: int,
+            new_message: str,
+            attachments=None,
+    ):
         query = """
                 UPDATE messages
-                SET message = %s
-                WHERE id = %s \
+                SET message     = %s,
+                    attachments = %s
+                WHERE id = %s
                 """
+
         try:
             with self.connection.cursor() as cursor:
-                cursor.execute(query, (new_message, message_id))
+                cursor.execute(
+                    query,
+                    (
+                        new_message,
+                        Json(attachments) if attachments is not None else None,
+                        message_id,
+                    ),
+                )
+
             self.connection.commit()
+
         except Exception as e:
             print(f"Error updating message {message_id}: {e}")
             self.connection.rollback()
@@ -199,13 +234,17 @@ class ConversationRepository:
 
     def delete_message(self, message_id: int):
         query = """
-                DELETE FROM messages
-                WHERE id = %s \
+                DELETE 
+                FROM messages
+                WHERE id = %s 
                 """
+
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute(query, (message_id,))
+
             self.connection.commit()
+
         except Exception as e:
             print(f"Error deleting message {message_id}: {e}")
             self.connection.rollback()

@@ -248,15 +248,15 @@
               </div>
 
               <!-- Streaming Toggle -->
-              <button type="button" (click)="onToggleStreaming()"
-                [class.bg-indigo-100]="streamingEnabled()"
-                [class.text-indigo-600]="streamingEnabled()"
-                [class.bg-slate-100]="!streamingEnabled()"
-                [class.text-slate-400]="!streamingEnabled()"
-                class="flex items-center gap-1.5 h-9 px-3 rounded-full border border-white/70 text-xs font-bold transition-colors cursor-pointer">
-                <span class="flex h-2 w-2 rounded-full" [class.bg-indigo-500]="streamingEnabled()" [class.bg-slate-300]="!streamingEnabled()"></span>
-                Stream
-              </button>
+<!--              <button type="button" (click)="onToggleStreaming()"-->
+<!--                [class.bg-indigo-100]="streamingEnabled()"-->
+<!--                [class.text-indigo-600]="streamingEnabled()"-->
+<!--                [class.bg-slate-100]="!streamingEnabled()"-->
+<!--                [class.text-slate-400]="!streamingEnabled()"-->
+<!--                class="flex items-center gap-1.5 h-9 px-3 rounded-full border border-white/70 text-xs font-bold transition-colors cursor-pointer">-->
+<!--                <span class="flex h-2 w-2 rounded-full" [class.bg-indigo-500]="streamingEnabled()" [class.bg-slate-300]="!streamingEnabled()"></span>-->
+<!--                Stream-->
+<!--              </button>-->
 
               <!-- Send Button Anchor -->
               <button type="submit" [disabled]="(!userInput().trim() && selectedFiles().length === 0) || chatService.isThinking()"

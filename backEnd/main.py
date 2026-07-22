@@ -34,7 +34,7 @@ async def say_hello(
     files: List[UploadFile] = File(default=[]),
     llmService: LlmService = Depends(getLlmService)
 ):
-    chat_id, messages = llmService.chatWithLlm(userId, chatId, modelName, message)
+    chat_id, messages = await llmService.chatWithLlm(userId, chatId, modelName, message,files)
     return ChatResponse(userId=userId, chatId=chat_id, messages=messages)
 
 @app.post("/chat/stream/")
@@ -46,8 +46,8 @@ async def say_hello_stream(
         files: List[UploadFile] = File(default=[]),
         llmService: LlmService = Depends(getLlmService)
 ):
-    def event_generator():
-        for chat_id, msg in llmService.chatWithLlmStream(userId, chatId, modelName, message):
+    async def event_generator():
+        for chat_id, msg in await llmService.chatWithLlmStream(userId, chatId, modelName, message):
             if msg is None:
                 continue
             payload = ChatResponse(
