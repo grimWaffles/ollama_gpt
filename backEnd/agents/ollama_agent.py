@@ -5,7 +5,9 @@ from typing import Any, List, Optional, Union, Dict
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 
+from folder_tools import FolderReadTool, FolderWriteTool
 from models.chat_models import ChatMessage
+from web_search_tool import WebSearchTool
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -29,9 +31,15 @@ class OllamaAgent:
             tools: Optional[List[Any]] = None,
             system_prompt: str = "",
     ):
+        if tools is None:
+            reader = FolderReadTool()
+            writer = FolderWriteTool(reader = reader)
+            webSearchTool = WebSearchTool()
+            tools = [reader, writer, webSearchTool]
+
         self.agent = create_agent(
             model=model_name,
-            tools=tools or [],
+            tools=tools,
             system_prompt=system_prompt,
         )
 
@@ -64,7 +72,15 @@ class OllamaAgent:
         return {"role": entry.role, "content": entry.content}
 
     def invoke(self, conversation: List[ConversationEntry]) -> List[ChatMessage]:
-        messages = [self._to_message_dict(msg) for msg in conversation]
+        messages = [
+            self._to_message_dict(msg)
+            for msg in conversation
+            # "tool" messages carry a tool_call_id that we never persisted,
+            # so they can't be reconstructed on replay — drop them. The
+            # assistant's subsequent text reply already contains whatever
+            # the tool found, so nothing is lost.
+            if msg.role != "tool" and msg.content
+        ]
 
         try:
             result = self.agent.invoke({"messages": messages})
