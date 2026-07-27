@@ -526,6 +526,7 @@ class LlmService:
             return [
                 ChatMessage(role=row[2], content=row[3])
                 for row in rows
+                if row[2] != "tool" and row[3] != ""
             ]
         except Exception as e:
             print(f"Error fetching messages for chat {chat_id}: {e}")
