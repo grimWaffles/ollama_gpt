@@ -103,7 +103,7 @@ class OllamaAgent:
             return []
 
     def stream(self, conversation: List[ConversationEntry]):
-        messages = [self._to_message_dict(msg) for msg in conversation]
+        messages = [self._to_message_dict(msg) for msg in conversation if msg.role != "tool"]
         seen = len(messages)
 
         try:

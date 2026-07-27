@@ -282,7 +282,10 @@ class LlmService:
 
             last_sequence_no = 0
             for row in rows:
-                _, _, role, msg_text, _, sequence_no, _ = row
+                _, _, role, msg_text,_, sequence_no, _ = row
+                if role == "tool":  # NEW — skip persisted tool messages on reload
+                    last_sequence_no = max(last_sequence_no, sequence_no)
+                    continue
                 conversation.append(ChatMessage(role=role, content=msg_text))
                 last_sequence_no = max(last_sequence_no, sequence_no)
 
@@ -398,6 +401,9 @@ class LlmService:
             last_sequence_no = 0
             for row in rows:
                 _, _, role, msg_text, _, sequence_no, _ = row
+                if role == "tool":  # NEW — skip persisted tool messages on reload
+                    last_sequence_no = max(last_sequence_no, sequence_no)
+                    continue
                 conversation.append(ChatMessage(role=role, content=msg_text))
                 last_sequence_no = max(last_sequence_no, sequence_no)
 

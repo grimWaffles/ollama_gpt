@@ -82,6 +82,7 @@ class VectorRepository:
             self._put_conn(conn)
 
     def similarity_search(self, chat_id: int, query_embedding: List[float], k: int = 4) -> List[Dict[str, Any]]:
+        print("Semantic search called")
         query_vec = np.array(query_embedding, dtype=np.float32)  # <-- convert
         conn = self._get_conn()
         try:
