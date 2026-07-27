@@ -11,11 +11,14 @@ from typing import List, Dict, Any, Optional
 from fastapi import UploadFile
 
 from agents.ollama_agent import OllamaAgent
-from folder_tools import FolderReadTool, FolderWriteTool
-from models import conversation_entity
+from repository.vector_repository import VectorRepository
+from services.embedding_service import EmbeddingService
+from tools.chat_history import ChatHistorySearchTool
+from tools.folder_tools import FolderReadTool, FolderWriteTool
 from models.chat_models import ChatMessage
 from repository.repository import ConversationRepository
-from web_search_tool import WebSearchTool
+from tools.knowledge_base_tool import KnowledgeBaseSearchTool
+from tools.web_search_tool import WebSearchTool
 
 IMAGE_UNAVAILABLE_MESSAGE = "Sorry, I can't process images yet."
 UPLOAD_ROOT = Path("uploads")
@@ -24,23 +27,27 @@ TEXT_EXTENSIONS = {".txt", ".md", ".csv", ".json", ".log", ".py", ".js", ".ts", 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 PDF_EXTENSIONS = {".pdf"}
 DOCX_EXTENSIONS = {".docx"}
+INLINE_TEXT_CHAR_LIMIT = 6000
+MAX_INLINE_MESSAGES = 30  # tune to your model's context window
 
 class LlmService:
     def __init__(self):
         self.repo = ConversationRepository()
+        self.vector_repo = VectorRepository()  # reuse your existing connection string
+        self.embedding_service = EmbeddingService()
 
         self.local_models = {
-            1: ("Gemma 3", "ollama:gemma3"),
+            # 1: ("Gemma 3", "ollama:gemma3"),
             2: ("Gemma 4", "ollama:gemma4"),
-            3: ("Qwen 3", "ollama:qwen3"),
-            4: ("Llama 3.1", "ollama:llama3.1"),
+            # 3: ("Qwen 3", "ollama:qwen3"),
+            # 4: ("Llama 3.1", "ollama:llama3.1"),
         }
 
         self.cloud_models = {
             1: ("GPT-OSS", "ollama:gpt-oss:120b-cloud"),
-            2: ("GPT-5 Mini", "openai:gpt-5-mini"),
-            3: ("Claude Sonnet 4", "anthropic:claude-sonnet-4"),
-            4: ("Gemini 2.5 Pro", "google_genai:gemini-2.5-pro"),
+            # 2: ("GPT-5 Mini", "openai:gpt-5-mini"),
+            # 3: ("Claude Sonnet 4", "anthropic:claude-sonnet-4"),
+            # 4: ("Gemini 2.5 Pro", "google_genai:gemini-2.5-pro"),
         }
 
         self.starter_system_prompt = (
@@ -58,6 +65,20 @@ class LlmService:
                - Never write or modify files unless the user has requested it.
                - Generate the content first, then use the write tool to save it.
                - Inform the user what file was created or modified.
+            3. Search Knowledge Base
+               - Use this tool to search the content of files the user has uploaded in this conversation.
+               - Small files are already included in full in the current message — you do not
+                 need to call this tool for those unless the user asks about earlier files
+                 from previous turns in this same conversation.
+               - Large files are NOT included in full — you must call this tool with a
+                 specific, targeted query to retrieve relevant passages from them.
+               - Cite the source filename when you use information from it.
+            4. Search Chat History
+               - Use this to recall things from past messages that are not visible in the
+                 current context — either earlier in this same conversation (if it's long)
+                 or from a different past conversation the user refers to.
+               - Prefer scope="this_conversation" unless the user clearly references a
+                 separate, earlier chat.
             General Tool Usage Rules:
             - Never invent tool results.
             - If a tool fails, explain the failure and, if possible, suggest how the user can resolve it.
@@ -86,6 +107,51 @@ class LlmService:
         self._writer = FolderWriteTool()
 
         self._fs_tools = [self._reader, self._writer, WebSearchTool]
+
+    def _ingest_message(self, message_id: int, chat_id: int, user_id: int, role: str, content: str) -> None:
+        if role == "tool" or not content or not content.strip():
+            return
+        try:
+            chunks = self.embedding_service.chunk_and_embed(content)
+            if chunks:
+                self.vector_repo.insert_message_chunks(message_id, chat_id, user_id, role, chunks)
+        except Exception as e:
+            print(e)
+            pass  # don't let embedding failures break the chat flow
+
+    def _ingest_documents(self, chat_id: int, user_id: int, parsedFileData: List[Dict[str, Any]]) -> None:
+        """
+        For each parsed file with extractable text, store it as a `documents` row,
+        chunk + embed it, and store chunks in `document_chunks`. Mutates each
+        entry in parsedFileData in place, adding entry["document_id"], so
+        _build_attachment_records can persist the link.
+        """
+        for entry in parsedFileData:
+            if entry["kind"] not in ("text", "pdf", "docx") or not entry.get("text"):
+                continue
+
+            doc_id = self.vector_repo.insert_document(
+                chat_id=chat_id,
+                user_id=user_id,
+                filename=entry["filename"],
+                path=entry["path"],
+                content_type=entry["content_type"],
+                kind=entry["kind"],
+                char_count=len(entry["text"]),
+                is_inlined=len(entry["text"]) <= INLINE_TEXT_CHAR_LIMIT,  # NEW
+            )
+            entry["document_id"] = doc_id
+
+            try:
+                chunks = self.embedding_service.chunk_and_embed(entry["text"])
+                if chunks:
+                    self.vector_repo.insert_chunks(doc_id, chat_id, user_id, chunks)
+                    self.vector_repo.update_document_status(doc_id, "embedded")
+                else:
+                    self.vector_repo.update_document_status(doc_id, "skipped")
+            except Exception as e:
+                print (e)
+                self.vector_repo.update_document_status(doc_id, "failed")
 
     async def parse_files(self, chat_id: int, files: List[UploadFile]) -> List[Dict[str, Any]]:
         """
@@ -157,41 +223,43 @@ class LlmService:
 
         return parsed
 
-    def _build_attachment_records(self, parsedFileData: List[Dict[str, Any]]) -> Optional[List[Dict[str, Any]]]:
-        """DB-safe record — path + metadata only, never raw text/base64."""
-        if not parsedFileData:
-            return None
-        return [
-            {
-                "filename": entry["filename"],
-                "path": entry["path"],
-                "content_type": entry["content_type"],
-                "kind": entry["kind"],
-            }
-            for entry in parsedFileData
-        ]
-
-    def _has_image(self, parsedFileData: List[Dict[str, Any]]) -> bool:
-        return any(entry["kind"] == "image" for entry in parsedFileData)
-
-    def _build_enriched_conversation(self, conversation: List[ChatMessage], parsedFileData: List[Dict[str, Any]]) -> \
-        List[Dict[str, Any]]:
+    def _build_enriched_conversation(self, conversation: List[ChatMessage], parsedFileData: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Returns a NEW list of plain dicts for the agent call only — `conversation`
-        (which gets persisted) is left untouched. Appends extracted text/pdf/docx
-        content to the last (new user) message. Assumes no images at this point.
+        (which gets persisted) is left untouched.
+
+        Small files (<= INLINE_TEXT_CHAR_LIMIT): full extracted text is appended
+        inline, same as before.
+
+        Large files: only a short notice + filename is appended, since the full
+        text was already chunked and embedded by _ingest_documents. The agent is
+        expected to call search_knowledge_base for these.
         """
         agent_conversation = [{"role": m.role, "content": m.content} for m in conversation]
 
         extra_text = ""
         for entry in parsedFileData:
-            if entry.get("text"):
-                extra_text += f"\n\n---\nFile: {entry['filename']}\n{entry['text']}"
+            text = entry.get("text")
+            if not text:
+                continue
+
+            if len(text) <= INLINE_TEXT_CHAR_LIMIT:
+                extra_text += f"\n\n---\nFile: {entry['filename']}\n{text}"
+            else:
+                extra_text += (
+                    f"\n\n---\nFile: {entry['filename']} "
+                    f"({len(text)} characters — too large to inline in full). "
+                    f"This file has been indexed; use the search_knowledge_base tool "
+                    f"with a specific query to retrieve relevant passages from it."
+                )
 
         if extra_text and agent_conversation:
             agent_conversation[-1]["content"] += extra_text
 
         return agent_conversation
+
+    def _has_image(self, parsedFileData: List[Dict[str, Any]]) -> bool:
+        return any(entry["kind"] == "image" for entry in parsedFileData)
 
     async def chatWithLlm(self, user_id: int, chat_id: int, model_name:str, message: str, files: Optional[List[UploadFile]] = None) -> tuple[int, List[ChatMessage]]:
         files = files or []
@@ -209,6 +277,8 @@ class LlmService:
                 )
 
             rows = self.repo.get_messages(chat_id)
+            if len(rows) > MAX_INLINE_MESSAGES:
+                rows = rows[:1] + rows[-(MAX_INLINE_MESSAGES - 1):]  # keep system prompt + recent tail
 
             last_sequence_no = 0
             for row in rows:
@@ -221,12 +291,16 @@ class LlmService:
 
             conversation.append(ChatMessage(role="user", content=message))
 
+            attachment_records = []
+
             parsedFileData = await self.parse_files(chat_id, files)
-            attachment_records = self._build_attachment_records(parsedFileData)
+            if parsedFileData:
+                self._ingest_documents(chat_id, user_id, parsedFileData)  # NEW
+                attachment_records = self._build_enriched_conversation(conversation, parsedFileData)
 
             now = datetime.utcnow()
             last_sequence_no += 1
-            self.repo.create_message(
+            message_id = self.repo.create_message(
                 SimpleNamespace(
                     id=0,
                     chatId=chat_id,
@@ -237,33 +311,53 @@ class LlmService:
                     attachments=json.dumps(attachment_records) if attachment_records else None,
                 )
             )
+            self._ingest_message(message_id, chat_id, user_id, "user", message)  # NEW
 
             if parsedFileData and self._has_image(parsedFileData):
-                assistant_msg = ChatMessage(role="assistant", content=IMAGE_UNAVAILABLE_MESSAGE)
+                currentRole = "assistant"
+                assistant_msg = ChatMessage(role=currentRole, content=IMAGE_UNAVAILABLE_MESSAGE)
                 last_sequence_no += 1
-                self.repo.create_message(
+                message_id = self.repo.create_message(
                     SimpleNamespace(
                         id=0,
                         chatId=chat_id,
-                        role="assistant",
+                        role=currentRole,
                         message=assistant_msg.content,
                         sequenceNo=last_sequence_no,
                         created_at=datetime.utcnow(),
                         attachments=None,
                     )
                 )
+                self._ingest_message(message_id, chat_id, user_id, currentRole, message)  # NEW
+
                 return chat_id, [assistant_msg]
 
-            # _, model_name = self.cloud_models[1]
-            agent = OllamaAgent(model_name=model_name, tools=self._fs_tools, system_prompt=self.starter_system_prompt)
+            kb_tool = KnowledgeBaseSearchTool(
+                vector_repo=self.vector_repo,
+                embedding_service=self.embedding_service,
+                chat_id=chat_id,
+            )
+
+            chat_history_tool = ChatHistorySearchTool(
+                vector_repo=self.vector_repo,
+                embedding_service=self.embedding_service,
+                chat_id=chat_id,
+                user_id=user_id,
+            )
+            agent = OllamaAgent(
+                model_name=model_name,
+                tools=self._fs_tools + [kb_tool, chat_history_tool],
+                system_prompt=self.starter_system_prompt,
+            )
 
             agent_conversation = self._build_enriched_conversation(conversation, parsedFileData) if parsedFileData else conversation
+
             full_response = agent.invoke(agent_conversation)
             new_messages = full_response[len(agent_conversation):]
 
             for new_msg in new_messages:
                 last_sequence_no += 1
-                self.repo.create_message(
+                message_id = self.repo.create_message(
                     SimpleNamespace(
                         id=0,
                         chatId=chat_id,
@@ -274,6 +368,7 @@ class LlmService:
                         attachments=None,
                     )
                 )
+                self._ingest_message(message_id, chat_id, user_id, "user", message)  # NEW
 
             return chat_id, new_messages
         except Exception as e:
@@ -297,6 +392,8 @@ class LlmService:
                 )
 
             rows = self.repo.get_messages(chat_id)
+            if len(rows) > MAX_INLINE_MESSAGES:
+                rows = rows[:1] + rows[-(MAX_INLINE_MESSAGES - 1):]  # keep system prompt + recent tail
 
             last_sequence_no = 0
             for row in rows:
@@ -310,11 +407,12 @@ class LlmService:
             conversation.append(ChatMessage(role="user", content=message))
 
             parsedFileData = await self.parse_files(chat_id, files)
-            attachment_records = self._build_attachment_records(parsedFileData)
+            self._ingest_documents(chat_id, user_id, parsedFileData)
+            attachment_records = self._build_enriched_conversation(parsedFileData)
 
             now = datetime.utcnow()
             last_sequence_no += 1
-            self.repo.create_message(
+            message_id = self.repo.create_message(
                 SimpleNamespace(
                     id=0,
                     chatId=chat_id,
@@ -325,6 +423,7 @@ class LlmService:
                     attachments=json.dumps(attachment_records) if attachment_records else None,
                 )
             )
+            self._ingest_message(message_id, chat_id, user_id, "user", message)  # NEW
 
             if parsedFileData and self._has_image(parsedFileData):
                 assistant_msg = ChatMessage(role="assistant", content=IMAGE_UNAVAILABLE_MESSAGE)
@@ -343,8 +442,22 @@ class LlmService:
                 yield chat_id, assistant_msg
                 return
 
-            # _, model_name = self.cloud_models[1]
-            agent = OllamaAgent(model_name=model_name, tools=self._fs_tools, system_prompt=self.starter_system_prompt)
+            kb_tool = KnowledgeBaseSearchTool(
+                vector_repo=self.vector_repo,
+                embedding_service=self.embedding_service,
+                chat_id=chat_id,
+            )
+            chat_history_tool = ChatHistorySearchTool(
+                vector_repo=self.vector_repo,
+                embedding_service=self.embedding_service,
+                chat_id=chat_id,
+                user_id=user_id,
+            )
+            agent = OllamaAgent(
+                model_name=model_name,
+                tools=self._fs_tools + [kb_tool, chat_history_tool],
+                system_prompt=self.starter_system_prompt,
+            )
 
             agent_conversation = self._build_enriched_conversation(conversation,
                                                                    parsedFileData) if parsedFileData else conversation
@@ -356,7 +469,7 @@ class LlmService:
 
             if last_msg is not None:
                 last_sequence_no += 1
-                self.repo.create_message(
+                message_id = self.repo.create_message(
                     SimpleNamespace(
                         id=0,
                         chatId=chat_id,
@@ -367,6 +480,7 @@ class LlmService:
                         attachments=None,
                     )
                 )
+                self._ingest_message(message_id, chat_id, user_id, "user", message)  # NEW
 
         except Exception as e:
             print(f"Error: {e}")

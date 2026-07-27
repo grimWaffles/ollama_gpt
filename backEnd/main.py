@@ -74,3 +74,12 @@ async def get_chat_messages(chat_id: int, llmService: LlmService = Depends(getLl
 @app.get("/conversations/all", response_model=List[ConversationEntity])
 async def get_chat_messages(userId: int, llmService: LlmService = Depends(getLlmService)):
     return llmService.getConversation(userId)
+
+@app.get("/documents/{chat_id}")
+async def list_documents(chat_id: int, llmService: LlmService = Depends(getLlmService)):
+    return llmService.vector_repo.list_documents(chat_id)
+
+@app.delete("/documents/{document_id}")
+async def delete_document(document_id: int, llmService: LlmService = Depends(getLlmService)):
+    llmService.vector_repo.delete_document(document_id)
+    return {"deleted": document_id}

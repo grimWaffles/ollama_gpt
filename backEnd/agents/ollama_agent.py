@@ -5,9 +5,9 @@ from typing import Any, List, Optional, Union, Dict
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 
-from folder_tools import FolderReadTool, FolderWriteTool
+from tools.folder_tools import FolderReadTool, FolderWriteTool
 from models.chat_models import ChatMessage
-from web_search_tool import WebSearchTool
+from tools.web_search_tool import WebSearchTool
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -79,7 +79,6 @@ class OllamaAgent:
             # so they can't be reconstructed on replay — drop them. The
             # assistant's subsequent text reply already contains whatever
             # the tool found, so nothing is lost.
-            if msg.role != "tool" and msg.content
         ]
 
         try:
