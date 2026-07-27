@@ -21,6 +21,8 @@ def getDemoService():
     return DemoService()
 def getLlmService():
     return LlmService()
+
+
 @app.get("/")
 async def root(name_of_user:str,demo_service: DemoService = Depends(getDemoService)):
     return {"message": demo_service.say_hello(name_of_user)}

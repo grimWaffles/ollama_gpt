@@ -102,6 +102,39 @@ class OllamaAgent:
             print(f"Error: {traceback.format_exc()}")
             return []
 
+    async def ainvoke(self, conversation: List[ConversationEntry]) -> List[ChatMessage]:
+        messages = [
+            self._to_message_dict(msg)
+            for msg in conversation
+            # "tool" messages carry a tool_call_id that we never persisted,
+            # so they can't be reconstructed on replay — drop them. The
+            # assistant's subsequent text reply already contains whatever
+            # the tool found, so nothing is lost.
+        ]
+
+        try:
+            result = await self.agent.ainvoke({"messages": messages})
+            returned_messages: List[ChatMessage] = []
+
+            for message in result["messages"]:
+                content = self.extract_text(getattr(message, "content", None))
+
+                msg_type = getattr(message, "type", None)
+                if msg_type in _ROLE_MAP:
+                    role = _ROLE_MAP[msg_type]
+                else:
+                    role = getattr(message, "role", None) or type(message).__name__.replace("Message", "").lower()
+
+                returned_messages.append(ChatMessage(role=role, content=content))
+
+            return returned_messages
+
+        except Exception:
+            print(f"Error: {traceback.format_exc()}")
+            return []
+
+
+
     def stream(self, conversation: List[ConversationEntry]):
         messages = [self._to_message_dict(msg) for msg in conversation if msg.role != "tool"]
         seen = len(messages)

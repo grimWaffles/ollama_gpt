@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import List, Dict, Any, Optional
-
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from fastapi import UploadFile
 
 from agents.ollama_agent import OllamaAgent
@@ -19,6 +19,9 @@ from models.chat_models import ChatMessage
 from repository.repository import ConversationRepository
 from tools.knowledge_base_tool import KnowledgeBaseSearchTool
 from tools.web_search_tool import WebSearchTool
+
+from fastmcp import Client as FastMCPClient
+import asyncio
 
 IMAGE_UNAVAILABLE_MESSAGE = "Sorry, I can't process images yet."
 UPLOAD_ROOT = Path("uploads")
@@ -107,6 +110,21 @@ class LlmService:
         self._writer = FolderWriteTool()
 
         self._fs_tools = [self._reader, self._writer, WebSearchTool]
+
+        self.mcp_tool_client = MultiServerMCPClient(
+            {
+                "chat_tools":{
+                    "transport":"streamable_http",
+                    "url":"http://localhost:7000/mcp"
+                }
+            }
+        )
+
+    async def check_mcp_status(self):
+        client = FastMCPClient("http://localhost:7000/mcp/")  # or your custom path
+        async with client:
+            tools = await client.list_tools()
+            print([t.name for t in tools])
 
     def _ingest_message(self, message_id: int, chat_id: int, user_id: int, role: str, content: str) -> None:
         if role == "tool" or not content or not content.strip():
@@ -262,6 +280,8 @@ class LlmService:
         return any(entry["kind"] == "image" for entry in parsedFileData)
 
     async def chatWithLlm(self, user_id: int, chat_id: int, model_name:str, message: str, files: Optional[List[UploadFile]] = None) -> tuple[int, List[ChatMessage]]:
+        await self.check_mcp_status()
+
         files = files or []
         conversation: List[ChatMessage] = []
         try:
@@ -347,15 +367,18 @@ class LlmService:
                 chat_id=chat_id,
                 user_id=user_id,
             )
+
+            mcp_tools = await self.mcp_tool_client.get_tools()
+
             agent = OllamaAgent(
                 model_name=model_name,
-                tools=self._fs_tools + [kb_tool, chat_history_tool],
+                tools=mcp_tools,
                 system_prompt=self.starter_system_prompt,
             )
 
             agent_conversation = self._build_enriched_conversation(conversation, parsedFileData) if parsedFileData else conversation
 
-            full_response = agent.invoke(agent_conversation)
+            full_response = await agent.ainvoke(agent_conversation)
             new_messages = full_response[len(agent_conversation):]
 
             for new_msg in new_messages:
