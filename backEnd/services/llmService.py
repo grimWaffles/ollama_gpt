@@ -372,7 +372,7 @@ class LlmService:
 
             agent = OllamaAgent(
                 model_name=model_name,
-                tools=mcp_tools,
+                tools=[mcp_tools,kb_tool,chat_history_tool],
                 system_prompt=self.starter_system_prompt,
             )
 

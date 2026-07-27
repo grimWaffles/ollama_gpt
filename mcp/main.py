@@ -22,13 +22,13 @@ try:
 except Exception:
     print("folder_tools_mcp: FAILED")
     traceback.print_exc()
-
-try:
-    import chat_history_search_mcp as ch
-    print("chat_history_search_mcp: import OK")
-except Exception:
-    print("chat_history_search_mcp: FAILED")
-    traceback.print_exc()
+#
+# try:
+#     import chat_history_search_mcp as ch
+#     print("chat_history_search_mcp: import OK")
+# except Exception:
+#     print("chat_history_search_mcp: FAILED")
+#     traceback.print_exc()
 
 print("DEBUG registered tools:", asyncio.run(mcp.list_tools()))
 
