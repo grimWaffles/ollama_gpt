@@ -8,6 +8,9 @@ import {ChatMessage} from '../chat.service';
   standalone: true,
   imports: [CommonModule, MarkdownComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles:`
+
+  `,
   template: `
     <div class="flex w-full gap-2.5" [class.justify-end]="isUser()" [class.justify-start]="!isUser()">
 
@@ -76,10 +79,12 @@ import {ChatMessage} from '../chat.service';
               {{ msg().content }}
             </div>
           } @else {
-            <markdown
-              class="prose prose-slate prose-sm max-w-none"
-              [data]="displayedContent()">
-            </markdown>
+            <div class="assistant-markdown">
+              <markdown
+                class="max-w-none"
+                [data]="displayedContent()">
+              </markdown>
+            </div>
           }
         </div>
 

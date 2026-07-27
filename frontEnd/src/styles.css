@@ -1,3 +1,130 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import "tailwindcss";
+.assistant-markdown {
+      font-size: 0.96rem;
+      line-height: 1.75;
+      color: rgb(51 65 85);
+    }
+
+    .assistant-markdown :is(p, ul, ol, blockquote, pre, table) {
+      margin: 0.9rem 0;
+    }
+
+    .assistant-markdown p:first-child {
+      margin-top: 0;
+    }
+
+    .assistant-markdown p:last-child {
+      margin-bottom: 0;
+    }
+
+    .assistant-markdown h1,
+    .assistant-markdown h2,
+    .assistant-markdown h3 {
+      font-weight: 700;
+      color: rgb(30 41 59);
+      margin: 1.2rem 0 .6rem;
+      letter-spacing: -.02em;
+    }
+
+    .assistant-markdown h1 {
+      font-size: 1.45rem;
+    }
+
+    .assistant-markdown h2 {
+      font-size: 1.25rem;
+    }
+
+    .assistant-markdown h3 {
+      font-size: 1.1rem;
+    }
+
+    .assistant-markdown ul,
+    .assistant-markdown ol {
+      padding-left: 1.35rem;
+    }
+
+    .assistant-markdown li {
+      margin: .35rem 0;
+    }
+
+    .assistant-markdown li::marker {
+      color: rgb(99 102 241);
+    }
+
+    .assistant-markdown code:not(pre code) {
+      background: rgb(238 242 255);
+      color: rgb(79 70 229);
+      padding: .18rem .42rem;
+      border-radius: .45rem;
+      font-size: .88em;
+      font-weight: 500;
+    }
+
+    .assistant-markdown pre {
+      background: #0f172a;
+      color: #f8fafc;
+      border-radius: 18px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .15);
+    }
+
+    .assistant-markdown pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      font-size: .9rem;
+    }
+
+    .assistant-markdown blockquote {
+      border-left: 3px solid rgb(99 102 241);
+      padding-left: 1rem;
+      color: rgb(71 85 105);
+      margin: 1rem 0;
+      font-style: italic;
+    }
+
+    .assistant-markdown table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 14px;
+      margin: 1rem 0;
+    }
+
+    .assistant-markdown th {
+      background: rgb(241 245 249);
+      color: rgb(30 41 59);
+      font-weight: 600;
+    }
+
+    .assistant-markdown th,
+    .assistant-markdown td {
+      padding: .8rem 1rem;
+      border-bottom: 1px solid rgb(226 232 240);
+    }
+
+    .assistant-markdown tr:last-child td {
+      border-bottom: none;
+    }
+
+    .assistant-markdown a {
+      color: rgb(79 70 229);
+      text-decoration: none;
+      font-weight: 500;
+      transition: .2s;
+    }
+
+    .assistant-markdown a:hover {
+      color: rgb(67 56 202);
+      text-decoration: underline;
+    }
+
+    .assistant-markdown hr {
+      border: none;
+      height: 1px;
+      background: rgb(226 232 240);
+      margin: 1.5rem 0;
+    }
