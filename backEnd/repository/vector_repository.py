@@ -5,14 +5,18 @@ from psycopg2.pool import SimpleConnectionPool
 from pgvector.psycopg2 import register_vector
 import numpy as np
 
+from services.env_service import EnvService
+
+
 class VectorRepository:
     def __init__(self, minconn: int = 1, maxconn: int = 5):
+        db_config = EnvService().get_db_config()
         conn_str = (
-            f"host={os.getenv('DB_HOST', 'localhost')} "
-            f"port={os.getenv('DB_PORT', 5432)} "
-            f"dbname={os.getenv('DB_NAME', 'postgres')} "
-            f"user={os.getenv('DB_USER', 'postgres')} "
-            f"password={os.getenv('DB_PASSWORD')}"
+            f"host={db_config.host} "
+            f"port={db_config.port} "
+            f"dbname={db_config.name} "
+            f"user={db_config.user} "
+            f"password={db_config.password}"
         )
         self.pool = SimpleConnectionPool(minconn, maxconn, dsn=conn_str)
 

@@ -380,9 +380,10 @@ def _ingest_documents(self, chat_id: int, user_id: int,
 
 ### Call site — in both `chatWithLlm` and `chatWithLlmStream`
 Right after `parsedFileData = await self.parse_files(chat_id, files)`:
+
 ```python
-parsedFileData = await self.parse_files(chat_id, files)
-self._ingest_documents(chat_id, user_id, parsedFileData)   # NEW
+parsedFileData = await self._parse_files(chat_id, files)
+self._ingest_documents(chat_id, user_id, parsedFileData)  # NEW
 attachment_records = self._build_attachment_records(parsedFileData)
 ```
 
@@ -651,7 +652,7 @@ assistant message, and the `new_messages` / streamed-message loops) is
 updated to capture the returned id and call `_ingest_message`, e.g.:
 
 ```python
-message_id = self.repo.create_message(SimpleNamespace(...))
+message_id = self.convo_repo.create_message(SimpleNamespace(...))
 self._ingest_message(message_id, chat_id, user_id, "user", message)  # NEW
 ```
 
@@ -683,10 +684,11 @@ System prompt — 4th tool entry:
 ### Optional: bound how much history gets inlined per turn
 Once messages are embedded, long chats no longer need every row inlined
 verbatim — older messages can be left to `search_chat_history` instead:
+
 ```python
 MAX_INLINE_MESSAGES = 30  # tune to your model's context window
 
-rows = self.repo.get_messages(chat_id)
+rows = self.convo_repo.get_messages(chat_id)
 if len(rows) > MAX_INLINE_MESSAGES:
     rows = rows[:1] + rows[-(MAX_INLINE_MESSAGES - 1):]  # keep system prompt + recent tail
 ```

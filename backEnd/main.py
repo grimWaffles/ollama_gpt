@@ -16,7 +16,20 @@ app.add_middleware(
     allow_methods=["*"],      # Allows all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],      # Allows all request headers
 )
-def getLlmService():
+
+# Resolve service dependencies
+
+# def get_env_service():
+#     return EnvService()
+#
+# def get_llm_model_service() -> LlmModelService:
+#     return LlmModelService()
+#
+# def get_system_tool_service() -> SystemToolService:
+#     return SystemToolService()
+
+def get_llm_service(
+) -> LlmService:
     return LlmService()
 
 @app.post("/chat/", response_model=ChatResponse)
@@ -26,54 +39,32 @@ async def say_hello(
     message: str = Form(...),
     modelName: str = Form(...),
     files: List[UploadFile] = File(default=[]),
-    llmService: LlmService = Depends(getLlmService)
+    llmService: LlmService = Depends(get_llm_service)
 ):
-    chat_id, messages = await llmService.chatWithLlm(userId, chatId, modelName, message,files)
+    chat_id, messages = await llmService.chat_with_llm(userId, chatId, modelName, message, files)
     return ChatResponse(userId=userId, chatId=chat_id, messages=messages)
 
-@app.post("/chat/stream/")
-async def say_hello_stream(
-        userId: int = Form(...),
-        chatId: int = Form(...),
-        message: str = Form(...),
-        modelName: str = Form(...),
-        files: List[UploadFile] = File(default=[]),
-        llmService: LlmService = Depends(getLlmService)
-):
-    async def event_generator():
-        for chat_id, msg in await llmService.chatWithLlmStream(userId, chatId, modelName, message):
-            if msg is None:
-                continue
-            payload = ChatResponse(
-                userId=userId,
-                chatId=chat_id,
-                messages=[msg],
-            )
-            yield f"data: {payload.model_dump_json()}\n\n"
-
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
-
 @app.get("/models/local", response_model=List[ModelInfo])
-async def get_local_models(llmService: LlmService = Depends(getLlmService)):
-    return llmService.getLocalModelList()
+async def get_local_models(llmService: LlmService = Depends(get_llm_service)):
+    return llmService.get_local_model_list()
 
 @app.get("/models/cloud", response_model=List[ModelInfo])
-async def get_cloud_models(llmService: LlmService = Depends(getLlmService)):
-    return llmService.getCloudModelList()
+async def get_cloud_models(llmService: LlmService = Depends(get_llm_service)):
+    return llmService.get_cloud_model_list()
 
 @app.get("/chat/{chat_id}/messages", response_model=List[ChatMessage])
-async def get_chat_messages(chat_id: int, llmService: LlmService = Depends(getLlmService)):
-    return llmService.getMessagesForChat(chat_id)
+async def get_chat_messages(chat_id: int, llmService: LlmService = Depends(get_llm_service)):
+    return llmService.get_messages_for_chat(chat_id)
 
 @app.get("/conversations/all", response_model=List[ConversationEntity])
-async def get_chat_messages(userId: int, llmService: LlmService = Depends(getLlmService)):
-    return llmService.getConversation(userId)
+async def get_chat_messages(userId: int, llmService: LlmService = Depends(get_llm_service)):
+    return llmService.get_conversation(userId)
 
 @app.get("/documents/{chat_id}")
-async def list_documents(chat_id: int, llmService: LlmService = Depends(getLlmService)):
+async def list_documents(chat_id: int, llmService: LlmService = Depends(get_llm_service)):
     return llmService.vector_repo.list_documents(chat_id)
 
 @app.delete("/documents/{document_id}")
-async def delete_document(document_id: int, llmService: LlmService = Depends(getLlmService)):
+async def delete_document(document_id: int, llmService: LlmService = Depends(get_llm_service)):
     llmService.vector_repo.delete_document(document_id)
     return {"deleted": document_id}

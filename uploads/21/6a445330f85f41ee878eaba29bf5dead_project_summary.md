@@ -181,18 +181,18 @@ def chatWithLlm(self, user_id: int, chat_id: int, message: str) -> tuple[int, Li
     try:
         # --- New chat: assign the next available chat_id ---
         if not chat_id or chat_id == 0:
-            max_chat_id = self.repo.get_max_chat_id()
-            chat_id = self.repo.create_conversation(
+            max_chat_id = self.convo_repo.get_max_chat_id()
+            chat_id = self.convo_repo.create_conversation(
                 SimpleNamespace(
                     chatId=chat_id,
                     userId=user_id,
-                    chatName=f"Conversation #{max_chat_id+1}",
+                    chatName=f"Conversation #{max_chat_id + 1}",
                     created_at=datetime.utcnow(),
                 )
             )
 
         # --- Fetch existing conversation from DB ---
-        rows = self.repo.get_messages(chat_id)
+        rows = self.convo_repo.get_messages(chat_id)
 
         last_sequence_no = 0
         for row in rows:
@@ -231,7 +231,7 @@ def chatWithLlm(self, user_id: int, chat_id: int, message: str) -> tuple[int, Li
         # --- Save user message ---
         now = datetime.utcnow()
         last_sequence_no += 1
-        self.repo.create_message(
+        self.convo_repo.create_message(
             SimpleNamespace(
                 id=0,
                 chatId=chat_id,
@@ -245,7 +245,7 @@ def chatWithLlm(self, user_id: int, chat_id: int, message: str) -> tuple[int, Li
         # --- Save assistant response message(s) ---
         for new_msg in new_messages:
             last_sequence_no += 1
-            self.repo.create_message(
+            self.convo_repo.create_message(
                 SimpleNamespace(
                     id=0,
                     chatId=chat_id,
@@ -266,17 +266,17 @@ def chatWithLlmStream(self, user_id: int, chat_id: int, message: str):
     conversation: List[ChatMessage] = []
     try:
         if not chat_id or chat_id == 0:
-            max_chat_id = self.repo.get_max_chat_id()
-            chat_id = self.repo.create_conversation(
+            max_chat_id = self.convo_repo.get_max_chat_id()
+            chat_id = self.convo_repo.create_conversation(
                 SimpleNamespace(
                     chatId=chat_id,
                     userId=user_id,
-                    chatName=f"Conversation #{max_chat_id+1}",
+                    chatName=f"Conversation #{max_chat_id + 1}",
                     created_at=datetime.utcnow(),
                 )
             )
 
-        rows = self.repo.get_messages(chat_id)
+        rows = self.convo_repo.get_messages(chat_id)
 
         last_sequence_no = 0
         for row in rows:
@@ -309,7 +309,7 @@ def chatWithLlmStream(self, user_id: int, chat_id: int, message: str):
 
         now = datetime.utcnow()
         last_sequence_no += 1
-        self.repo.create_message(
+        self.convo_repo.create_message(
             SimpleNamespace(
                 id=0,
                 chatId=chat_id,
@@ -328,7 +328,7 @@ def chatWithLlmStream(self, user_id: int, chat_id: int, message: str):
 
         if last_msg is not None:
             last_sequence_no += 1
-            self.repo.create_message(
+            self.convo_repo.create_message(
                 SimpleNamespace(
                     id=0,
                     chatId=chat_id,
@@ -349,9 +349,10 @@ def chatWithLlmStream(self, user_id: int, chat_id: int, message: str):
 ```python
 from fastapi.responses import StreamingResponse
 
+
 @app.post("/chat/", response_model=ChatResponse)
 async def say_hello(request: ChatRequest, llmService: LlmService = Depends(getLlmService)):
-    chat_id, messages = llmService.chatWithLlm(request.userId, request.chatId, request.message)
+    chat_id, messages = llmService.chat_with_llm(request.userId, request.chatId, request.message)
     return ChatResponse(userId=request.userId, chatId=chat_id, messages=messages)
 
 

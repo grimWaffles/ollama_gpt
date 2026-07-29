@@ -5,20 +5,19 @@ from datetime import datetime
 from dotenv import load_dotenv
 from psycopg2.extras import Json
 from models.conversation_entity import ConversationEntity
-
-env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
-load_dotenv(dotenv_path=env_path)
+from services.env_service import EnvService
 
 
 class ConversationRepository:
     def __init__(self):
         try:
+            db_config = EnvService().get_db_config()
             self.connection = psycopg2.connect(
-                host=os.getenv("DB_HOST", "localhost"),
-                port=os.getenv("DB_PORT", 5432),
-                database=os.getenv("DB_NAME", "postgres"),
-                user=os.getenv("DB_USER", "postgres"),
-                password=os.getenv("DB_PASSWORD"),
+                host=db_config.host,
+                port=db_config.port,
+                database=db_config.name,
+                user=db_config.user,
+                password=db_config.password,
             )
         except Exception as e:
             print(f"Error connecting to database: {e}")
@@ -57,8 +56,6 @@ class ConversationRepository:
             print(f"Error creating conversation: {e}")
             self.connection.rollback()
             raise
-        finally:
-            self.close()
 
     def get_conversation(self, chat_id: int):
         query = """
@@ -203,12 +200,7 @@ class ConversationRepository:
             self.connection.rollback()
             return []
 
-    def update_message(
-            self,
-            message_id: int,
-            new_message: str,
-            attachments=None,
-    ):
+    def update_message(self, message_id: int, new_message: str, attachments=None, ):
         query = """
                 UPDATE messages
                 SET message     = %s,
