@@ -1,130 +1,210 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import "tailwindcss";
+
+/* Enables class-based dark mode (toggle the `.dark` class on <html> or a
+   wrapping element) instead of relying on the OS `prefers-color-scheme`. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------
+   Text selection
+   -------------------------------------------------------------------
+   Explicitly force selectable text on message content. Some resets /
+   utility layers can leave `user-select` unset in a way that certain
+   browsers interpret inconsistently once elements are inside
+   backdrop-blurred, transformed containers — this makes intent explicit
+   so click-drag selection + Ctrl/Cmd+C always works over message bubbles.
+------------------------------------------------------------------------ */
+.assistant-markdown,
+.user-message-text {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+}
+
 .assistant-markdown {
-      font-size: 0.96rem;
-      line-height: 1.75;
-      color: rgb(51 65 85);
-    }
+  font-size: 0.96rem;
+  line-height: 1.75;
+  color: rgb(51 65 85);
+}
 
-    .assistant-markdown :is(p, ul, ol, blockquote, pre, table) {
-      margin: 0.9rem 0;
-    }
+.assistant-markdown :is(p, ul, ol, blockquote, pre, table) {
+  margin: 0.9rem 0;
+}
 
-    .assistant-markdown p:first-child {
-      margin-top: 0;
-    }
+.assistant-markdown p:first-child {
+  margin-top: 0;
+}
 
-    .assistant-markdown p:last-child {
-      margin-bottom: 0;
-    }
+.assistant-markdown p:last-child {
+  margin-bottom: 0;
+}
 
-    .assistant-markdown h1,
-    .assistant-markdown h2,
-    .assistant-markdown h3 {
-      font-weight: 700;
-      color: rgb(30 41 59);
-      margin: 1.2rem 0 .6rem;
-      letter-spacing: -.02em;
-    }
+.assistant-markdown h1,
+.assistant-markdown h2,
+.assistant-markdown h3 {
+  font-weight: 700;
+  color: rgb(30 41 59);
+  margin: 1.2rem 0 .6rem;
+  letter-spacing: -.02em;
+}
 
-    .assistant-markdown h1 {
-      font-size: 1.45rem;
-    }
+.assistant-markdown h1 {
+  font-size: 1.45rem;
+}
 
-    .assistant-markdown h2 {
-      font-size: 1.25rem;
-    }
+.assistant-markdown h2 {
+  font-size: 1.25rem;
+}
 
-    .assistant-markdown h3 {
-      font-size: 1.1rem;
-    }
+.assistant-markdown h3 {
+  font-size: 1.1rem;
+}
 
-    .assistant-markdown ul,
-    .assistant-markdown ol {
-      padding-left: 1.35rem;
-    }
+.assistant-markdown ul,
+.assistant-markdown ol {
+  padding-left: 1.35rem;
+}
 
-    .assistant-markdown li {
-      margin: .35rem 0;
-    }
+.assistant-markdown li {
+  margin: .35rem 0;
+}
 
-    .assistant-markdown li::marker {
-      color: rgb(99 102 241);
-    }
+.assistant-markdown li::marker {
+  color: rgb(99 102 241);
+}
 
-    .assistant-markdown code:not(pre code) {
-      background: rgb(238 242 255);
-      color: rgb(79 70 229);
-      padding: .18rem .42rem;
-      border-radius: .45rem;
-      font-size: .88em;
-      font-weight: 500;
-    }
+.assistant-markdown code:not(pre code) {
+  background: rgb(238 242 255);
+  color: rgb(79 70 229);
+  padding: .18rem .42rem;
+  border-radius: .45rem;
+  font-size: .88em;
+  font-weight: 500;
+}
 
-    .assistant-markdown pre {
-      background: #0f172a;
-      color: #f8fafc;
-      border-radius: 18px;
-      padding: 1rem 1.2rem;
-      overflow-x: auto;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, .15);
-    }
+.assistant-markdown pre {
+  background: #0f172a;
+  color: #f8fafc;
+  border-radius: 18px;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .15);
+}
 
-    .assistant-markdown pre code {
-      background: transparent;
-      color: inherit;
-      padding: 0;
-      font-size: .9rem;
-    }
+.assistant-markdown pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: .9rem;
+}
 
-    .assistant-markdown blockquote {
-      border-left: 3px solid rgb(99 102 241);
-      padding-left: 1rem;
-      color: rgb(71 85 105);
-      margin: 1rem 0;
-      font-style: italic;
-    }
+.assistant-markdown blockquote {
+  border-left: 3px solid rgb(99 102 241);
+  padding-left: 1rem;
+  color: rgb(71 85 105);
+  margin: 1rem 0;
+  font-style: italic;
+}
 
-    .assistant-markdown table {
-      width: 100%;
-      border-collapse: collapse;
-      overflow: hidden;
-      border-radius: 14px;
-      margin: 1rem 0;
-    }
+.assistant-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 14px;
+  margin: 1rem 0;
+}
 
-    .assistant-markdown th {
-      background: rgb(241 245 249);
-      color: rgb(30 41 59);
-      font-weight: 600;
-    }
+.assistant-markdown th {
+  background: rgb(241 245 249);
+  color: rgb(30 41 59);
+  font-weight: 600;
+}
 
-    .assistant-markdown th,
-    .assistant-markdown td {
-      padding: .8rem 1rem;
-      border-bottom: 1px solid rgb(226 232 240);
-    }
+.assistant-markdown th,
+.assistant-markdown td {
+  padding: .8rem 1rem;
+  border-bottom: 1px solid rgb(226 232 240);
+}
 
-    .assistant-markdown tr:last-child td {
-      border-bottom: none;
-    }
+.assistant-markdown tr:last-child td {
+  border-bottom: none;
+}
 
-    .assistant-markdown a {
-      color: rgb(79 70 229);
-      text-decoration: none;
-      font-weight: 500;
-      transition: .2s;
-    }
+.assistant-markdown a {
+  color: rgb(79 70 229);
+  text-decoration: none;
+  font-weight: 500;
+  transition: .2s;
+}
 
-    .assistant-markdown a:hover {
-      color: rgb(67 56 202);
-      text-decoration: underline;
-    }
+.assistant-markdown a:hover {
+  color: rgb(67 56 202);
+  text-decoration: underline;
+}
 
-    .assistant-markdown hr {
-      border: none;
-      height: 1px;
-      background: rgb(226 232 240);
-      margin: 1.5rem 0;
-    }
+.assistant-markdown hr {
+  border: none;
+  height: 1px;
+  background: rgb(226 232 240);
+  margin: 1.5rem 0;
+}
+
+/* ---------------------------------------------------------------------
+   Dark mode overrides
+   -------------------------------------------------------------------
+   Per design direction: dark mode text should read as bright white, not
+   washed-out grey. Body copy, headings, quotes, and table text all move
+   to (near-)white; only the smallest accent/marker details keep the
+   indigo brand tint for hierarchy.
+------------------------------------------------------------------------ */
+.dark .assistant-markdown {
+  color: rgb(255 255 255);
+}
+
+.dark .assistant-markdown h1,
+.dark .assistant-markdown h2,
+.dark .assistant-markdown h3 {
+  color: rgb(255 255 255);
+}
+
+.dark .assistant-markdown blockquote {
+  color: rgb(255 255 255 / 0.85);
+  border-left-color: rgb(165 180 252);
+}
+
+.dark .assistant-markdown code:not(pre code) {
+  background: rgb(255 255 255 / 0.12);
+  color: rgb(199 210 254);
+}
+
+.dark .assistant-markdown th {
+  background: rgb(255 255 255 / 0.08);
+  color: rgb(255 255 255);
+}
+
+.dark .assistant-markdown th,
+.dark .assistant-markdown td {
+  color: rgb(255 255 255 / 0.92);
+  border-bottom-color: rgb(255 255 255 / 0.12);
+}
+
+.dark .assistant-markdown a {
+  color: rgb(199 210 254);
+}
+
+.dark .assistant-markdown a:hover {
+  color: rgb(255 255 255);
+}
+
+.dark .assistant-markdown hr {
+  background: rgb(255 255 255 / 0.15);
+}
+
+.dark .assistant-markdown li::marker {
+  color: rgb(165 180 252);
+}

@@ -1,135 +1,232 @@
 <!-- Friendly rounded typeface: add to index.html <head> —
      <link rel="preconnect" href="https://fonts.googleapis.com">
      <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet"> -->
-<div class="relative flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900 font-['Nunito',_sans-serif] antialiased text-[15px]">
+<div
+  class="relative flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-['Nunito',_sans-serif] antialiased text-[15px] transition-colors duration-300">
 
   <!-- Bright gradient-mesh background -->
-  <div class="absolute inset-0 bg-gradient-to-br from-white via-sky-50 to-violet-50 pointer-events-none"></div>
-  <div class="absolute -top-40 -left-32 w-[32rem] h-[32rem] bg-indigo-300/40 rounded-full blur-[100px] pointer-events-none"></div>
-  <div class="absolute top-1/3 -right-40 w-[28rem] h-[28rem] bg-fuchsia-300/35 rounded-full blur-[100px] pointer-events-none"></div>
-  <div class="absolute -bottom-40 left-1/4 w-[30rem] h-[30rem] bg-sky-300/35 rounded-full blur-[110px] pointer-events-none"></div>
+  <div
+    class="absolute inset-0 bg-gradient-to-br from-white via-sky-50 to-violet-50 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950 pointer-events-none"></div>
+  <div
+    class="absolute -top-40 -left-32 w-[32rem] h-[32rem] bg-indigo-300/40 dark:bg-indigo-600/25 rounded-full blur-[100px] pointer-events-none"></div>
+  <div
+    class="absolute top-1/3 -right-40 w-[28rem] h-[28rem] bg-fuchsia-300/35 dark:bg-fuchsia-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+  <div
+    class="absolute -bottom-40 left-1/4 w-[30rem] h-[30rem] bg-sky-300/35 dark:bg-sky-600/20 rounded-full blur-[110px] pointer-events-none"></div>
+
+  <!-- Mobile scrim shown behind the drawer-style sidebar when it's open on small screens -->
+  @if (sidebarOpen()) {
+    <div
+      class="fixed inset-0 bg-slate-900/40 z-30 md:hidden"
+      (click)="toggleSidebar()"
+      aria-hidden="true"
+    ></div>
+  }
 
   <!-- Main Container Layout Wrap -->
-  <div class="flex w-full h-full p-5 gap-5 box-border z-10">
+  <div class="flex w-full h-full p-2.5 sm:p-4 md:p-5 gap-2.5 sm:gap-4 md:gap-5 box-border z-10">
 
-    <!-- SIDEBAR: Frosted Glass Panel -->
+    <!-- SIDEBAR: Frosted Glass Panel — collapsible on desktop, drawer on mobile -->
     <aside
-      class="w-76 flex flex-col rounded-[2rem] border border-white/70 bg-white/60 backdrop-blur-3xl shadow-[0_8px_32px_rgba(99,102,241,0.12),inset_0_1px_0_rgba(255,255,255,0.6)] transition-all">
+      class="fixed md:relative inset-y-0 left-0 md:inset-auto z-40 md:z-auto
+             w-72 flex flex-col rounded-r-[2rem] md:rounded-[2rem] border border-white/70 dark:border-white/10
+             bg-white/60 dark:bg-slate-900/70 backdrop-blur-3xl
+             shadow-[0_8px_32px_rgba(99,102,241,0.12),inset_0_1px_0_rgba(255,255,255,0.6)]
+             dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]
+             transition-all duration-300 ease-in-out overflow-hidden md:translate-x-0"
+      [class.md:w-20]="!sidebarOpen()"
+      [class.-translate-x-full]="!sidebarOpen()"
+    >
+
+      <!-- Desktop collapse/expand toggle -->
+      <button
+        (click)="toggleSidebar()"
+        title="{{ sidebarOpen() ? 'Collapse sidebar' : 'Expand sidebar' }}"
+        class="hidden md:flex absolute top-6 -right-3 h-7 w-7 rounded-full bg-white dark:bg-slate-800 border border-white/70 dark:border-white/10 items-center justify-center text-slate-400 dark:text-white/70 hover:text-indigo-500 dark:hover:text-white shadow-md z-10 cursor-pointer transition-transform duration-300"
+        [class.rotate-180]="!sidebarOpen()"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
 
       <!-- App Identity Header -->
-      <div class="pt-6 px-5 pb-3">
+      <div class="pt-6 px-5 pb-3 flex items-center" [class.justify-center]="!sidebarOpen()"
+           [class.md:px-0]="!sidebarOpen()">
         <h1
-          class="text-2xl font-['Quicksand',_sans-serif] font-bold tracking-tight text-slate-800 flex items-center gap-2">
-          <span class="text-indigo-500 font-extrabold text-lg">✦</span> SageGPT
+          class="text-2xl font-['Quicksand',_sans-serif] font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 overflow-hidden whitespace-nowrap">
+          <span class="text-indigo-500 font-extrabold text-lg shrink-0">✦</span>
+          @if (sidebarOpen()) {
+            <span>SageGPT</span>
+          }
         </h1>
       </div>
 
       <!-- New Chat Button Trigger Area -->
-      <div class="px-4 pb-4 border-b border-white/70">
-        <button (click)="onNewChat()"
-          class="w-full py-3 px-4 rounded-full border border-white/70 bg-white/70 hover:bg-white/90 text-slate-700 hover:text-indigo-600 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer shadow-sm">
-          <span class="text-base font-light text-indigo-500">+</span> New Conversation
+      <div class="px-4 pb-4 border-b border-white/70 dark:border-white/10" [class.md:px-3]="!sidebarOpen()">
+        <button (click)="onNewChat()" title="New conversation"
+                class="w-full py-3 px-4 rounded-full border border-white/70 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white/90 dark:hover:bg-white/10 text-slate-700 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-300 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer shadow-sm">
+          <span class="text-base font-light text-indigo-500 shrink-0">+</span>
+          @if (sidebarOpen()) {
+            <span>New Conversation</span>
+          }
         </button>
       </div>
 
       <!-- Historical Navigation Stack Layout -->
-      <div #chatListFrame class="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin">
+      <div #chatListFrame class="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-1 scrollbar-thin">
         @for (chat of chatService.conversations(); track chat.chatId) {
-        <button (click)="onSelectConversation(chat.chatId)"
-          [class.bg-indigo-50]="chatService.currentChatId() === chat.chatId"
-          [class.text-indigo-700]="chatService.currentChatId() === chat.chatId"
-          [class.border-indigo-100]="chatService.currentChatId() === chat.chatId"
-          class="w-full text-left py-3 px-4 rounded-2xl text-sm font-medium transition-all text-slate-500 border border-transparent hover:text-slate-800 hover:bg-white/70 flex items-center justify-between cursor-pointer group truncate">
-          <span class="truncate pr-2">{{ chat.chatName }}</span>
-          <span class="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400 font-mono">/</span>
-        </button>
+          <button (click)="onSelectConversation(chat.chatId)" title="{{ chat.chatName }}"
+                  [class.bg-indigo-50]="chatService.currentChatId() === chat.chatId"
+                  [class.dark:bg-white/10]="chatService.currentChatId() === chat.chatId"
+            [class.text-indigo-700]="chatService.currentChatId() === chat.chatId"
+            [class.dark:text-white]="chatService.currentChatId() === chat.chatId"
+            [class.border-indigo-100]="chatService.currentChatId() === chat.chatId"
+            [class.dark:border-white/10]="chatService.currentChatId() === chat.chatId"
+            [class.justify-center]="!sidebarOpen()"
+            class="w-full text-left py-3 px-4 rounded-2xl text-sm font-medium transition-all text-slate-500 dark:text-white/70 border border-transparent hover:text-slate-800 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/5 flex items-center gap-2 cursor-pointer group truncate">
+          @if (sidebarOpen()) {
+            <span class="truncate pr-2 flex-1">{{ chat.chatName }}</span>
+            <span class="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400 font-mono">/</span>
+          } @else {
+            <span class="text-xs font-bold uppercase">{{ chat.chatName.charAt(0) }}</span>
+          }
+          </button>
         } @empty {
-        <div class="text-xs text-slate-400 text-center py-8">No prior threads saved.</div>
+          @if (sidebarOpen()) {
+            <div class="text-xs text-slate-400 dark:text-white/40 text-center py-8">No prior threads saved.</div>
+          }
         }
       </div>
 
-      <!-- UTILITY FOOTER -->
-      <div class="p-3 border-t border-white/70 grid grid-cols-4 gap-1 bg-slate-900/[0.02] rounded-b-[2rem]">
-        <button (click)="onTriggerSettings()" title="Settings"
-          class="p-2.5 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
+      <!-- UTILITY FOOTER — dark mode toggle lives bottom-left -->
+      <div
+        class="p-3 border-t border-white/70 dark:border-white/10 grid gap-1 bg-slate-900/[0.02] dark:bg-black/20 rounded-b-[2rem]"
+        [class.grid-cols-5]="sidebarOpen()"
+        [class.grid-cols-1]="!sidebarOpen()"
+      >
+        <button (click)="toggleDarkMode()" title="{{ isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode' }}"
+                class="p-2.5 rounded-2xl text-slate-400 dark:text-white/80 hover:text-indigo-600 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10 transition flex items-center justify-center cursor-pointer">
+          @if (isDarkMode()) {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"></circle>
+              <line x1="12" y1="2" x2="12" y2="4"></line>
+              <line x1="12" y1="20" x2="12" y2="22"></line>
+              <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line>
+              <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line>
+              <line x1="2" y1="12" x2="4" y2="12"></line>
+              <line x1="20" y1="12" x2="22" y2="12"></line>
+              <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line>
+              <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line>
+            </svg>
+          } @else {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          }
         </button>
-        <button (click)="onTriggerProjects()" title="Projects"
-          class="p-2.5 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
-          </svg>
-        </button>
-        <button (click)="onTriggerReset()" title="Reset Interface"
-          class="p-2.5 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12a9 9 0 1 0 3-6.7"></path>
-            <path d="M3 4v5h5"></path>
-          </svg>
-        </button>
-        <button (click)="onTriggerAbout()" title="About System"
-          class="p-2.5 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-white/70 transition flex items-center justify-center cursor-pointer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9"></circle>
-            <line x1="12" y1="11" x2="12" y2="16"></line>
-            <circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle>
-          </svg>
-        </button>
+
+        @if (sidebarOpen()) {
+          <button (click)="onTriggerSettings()" title="Settings"
+                  class="p-2.5 rounded-2xl text-slate-400 dark:text-white/80 hover:text-indigo-600 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10 transition flex items-center justify-center cursor-pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <button (click)="onTriggerProjects()" title="Projects"
+                  class="p-2.5 rounded-2xl text-slate-400 dark:text-white/80 hover:text-indigo-600 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10 transition flex items-center justify-center cursor-pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
+            </svg>
+          </button>
+          <button (click)="onTriggerReset()" title="Reset Interface"
+                  class="p-2.5 rounded-2xl text-slate-400 dark:text-white/80 hover:text-indigo-600 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10 transition flex items-center justify-center cursor-pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+              <path d="M3 4v5h5"></path>
+            </svg>
+          </button>
+          <button (click)="onTriggerAbout()" title="About System"
+                  class="p-2.5 rounded-2xl text-slate-400 dark:text-white/80 hover:text-indigo-600 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10 transition flex items-center justify-center cursor-pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <line x1="12" y1="11" x2="12" y2="16"></line>
+              <circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle>
+            </svg>
+          </button>
+        }
       </div>
     </aside>
 
     <!-- MAIN CHAT INTERFACE WINDOW -->
     <main
-      class="flex-1 flex flex-col rounded-[2rem] border border-white/70 bg-white/50 backdrop-blur-3xl shadow-[0_8px_32px_rgba(99,102,241,0.12),inset_0_1px_0_rgba(255,255,255,0.6)] overflow-hidden">
+      class="flex-1 min-w-0 flex flex-col relative rounded-[2rem] border border-white/70 dark:border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-3xl shadow-[0_8px_32px_rgba(99,102,241,0.12),inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
 
       <!-- Top Window Navbar Header -->
-      <header class="h-16 border-b border-white/70 flex items-center justify-between px-6 bg-white/40">
-        <div class="flex items-center gap-2.5">
-          <div class="text-sm text-slate-500 font-semibold">Workspace Context</div>
-        </div>
-
-        <!-- Model Banner -->
-        <div class="flex items-center gap-2.5 bg-white/80 pl-2 pr-3.5 py-1.5 rounded-full border border-white/70 shadow-sm">
-          <span class="flex h-6 w-6 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-xs">✦</span>
-          <span class="text-sm font-bold text-indigo-600 tracking-wide">
-            {{ chatService.selectedModel().name || 'None Chosen' }}
-          </span>
+      <header
+        class="h-14 sm:h-16 shrink-0 border-b border-white/70 dark:border-white/10 flex items-center justify-between px-3 sm:px-6 bg-white/40 dark:bg-white/[0.03] relative z-20">
+        <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <!-- Mobile-only sidebar trigger -->
+          <button (click)="toggleSidebar()" title="Toggle sidebar"
+                  class="md:hidden p-2 -ml-1 rounded-xl text-slate-500 dark:text-white/70 hover:bg-white/70 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="text-sm text-slate-500 dark:text-white/60 font-semibold truncate">Workspace Context</div>
         </div>
       </header>
 
-      <!-- Message Scrolling Viewport Area -->
-      <div #scrollFrame class="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin">
+      <!-- Message Scrolling Viewport Area — footer floats on top, so bottom padding tracks its live height -->
+      <div
+        #scrollFrame
+        class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-4 scrollbar-thin relative z-0"
+        [style.paddingBottom.px]="composerHeight()"
+      >
         @for (msg of chatService.messages(); track $index) {
           <app-chat-message
             [msg]="msg"
             (copy)="copyMessage($event)"
             (retry)="retryMessage($index)">
           </app-chat-message>
-          <br>
         }
 
         <!-- Thinking Prompt Indicator Panel -->
         @if (chatService.isThinking()) {
-        <div class="flex w-full justify-start transition-all duration-200">
-          <div
-            class="max-w-xs rounded-3xl rounded-bl-md p-4 border border-white/70 bg-white/80 backdrop-blur-xl text-slate-400 text-xs flex items-center gap-3 shadow-sm">
+          <div class="flex w-full justify-start transition-all duration-200">
+            <div
+              class="max-w-xs rounded-3xl rounded-bl-md p-4 border border-white/70 dark:border-white/10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl text-slate-400 dark:text-white/70 text-xs flex items-center gap-3 shadow-sm">
             <span class="flex h-2 w-2 relative">
               <span
                 class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
             </span>
-            <span class="italic font-mono tracking-wide">{{ chatService.thinkingStatus() }}</span>
+              <span class="italic font-mono tracking-wide">{{ chatService.thinkingStatus() }}</span>
+            </div>
           </div>
-        </div>
         }
       </div>
 
-      <!-- Form Control Pad -->
-      <footer class="p-5 border-t border-white/70 bg-white/40 flex flex-col items-center">
-        <form (ngSubmit)="submitMessage()" class="w-full max-w-xl flex flex-col gap-3">
+      <!-- Sticky/floating Form Control Pad — sits over the message list so the conversation scrolls behind it -->
+      <footer
+        #composerFooter
+        class="absolute bottom-0 left-0 right-0 z-10 px-3 sm:px-5 pt-8 pb-3 sm:pb-5 flex flex-col items-center pointer-events-none
+               bg-gradient-to-t from-white/95 via-white/80 to-transparent
+               dark:from-slate-950/95 dark:via-slate-950/80 dark:to-transparent"
+      >
+        <form (ngSubmit)="submitMessage()" class="w-full max-w-xl flex flex-col gap-3 pointer-events-auto">
 
           <!-- Hidden file input driving the attach button below -->
           <input
@@ -142,133 +239,166 @@
 
           <!-- Staged attachments — shown above the composer once files are picked, cleared on send -->
           @if (selectedFiles().length > 0) {
-          <div class="w-full flex flex-wrap gap-2 px-1">
-            @for (attachment of selectedFiles(); track attachment.file.name + $index) {
-            <div
-              class="relative flex items-center gap-2 rounded-2xl border border-white/70 bg-white/80 backdrop-blur-md pl-2 pr-2.5 py-1.5 shadow-sm">
-              @if (attachment.previewUrl) {
-              <img [src]="attachment.previewUrl" [alt]="attachment.file.name" class="h-8 w-8 object-cover rounded-xl" />
-              } @else {
-              <span class="flex h-8 w-8 shrink-0 rounded-xl bg-indigo-50 text-indigo-400 items-center justify-center">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+            <div class="w-full flex flex-wrap gap-2 px-1">
+              @for (attachment of selectedFiles(); track attachment.file.name + $index) {
+                <div
+                  class="relative flex items-center gap-2 rounded-2xl border border-white/70 dark:border-white/10 bg-white/80 dark:bg-slate-800/90 backdrop-blur-md pl-2 pr-2.5 py-1.5 shadow-sm">
+                  @if (attachment.previewUrl) {
+                    <img [src]="attachment.previewUrl" [alt]="attachment.file.name"
+                         class="h-8 w-8 object-cover rounded-xl"/>
+                  } @else {
+                    <span
+                      class="flex h-8 w-8 shrink-0 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-400 dark:text-indigo-300 items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                 </svg>
               </span>
+                  }
+                  <div class="flex flex-col leading-tight">
+                    <span
+                      class="text-xs font-semibold text-slate-700 dark:text-white truncate max-w-[9rem]">{{ attachment.file.name }}</span>
+                    <span
+                      class="text-[10px] text-slate-400 dark:text-white/50">{{ formatSize(attachment.file.size) }}</span>
+                  </div>
+                  <button type="button" (click)="removeAttachment($index)" title="Remove"
+                          class="ml-1 h-5 w-5 flex items-center justify-center rounded-full text-slate-400 dark:text-white/50 hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 6 6 18"></path>
+                      <path d="M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
               }
-              <div class="flex flex-col leading-tight">
-                <span class="text-xs font-semibold text-slate-700 truncate max-w-[9rem]">{{ attachment.file.name }}</span>
-                <span class="text-[10px] text-slate-400">{{ formatSize(attachment.file.size) }}</span>
-              </div>
-              <button type="button" (click)="removeAttachment($index)" title="Remove"
-                class="ml-1 h-5 w-5 flex items-center justify-center rounded-full text-slate-400 hover:text-red-500 hover:bg-black/5 transition-colors cursor-pointer">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 6 6 18"></path>
-                  <path d="M6 6l12 12"></path>
-                </svg>
-              </button>
             </div>
-            }
-          </div>
           }
 
           <div
-            class="relative w-full flex items-end bg-white/80 border border-white/70 focus-within:border-indigo-300 rounded-[1.75rem] p-2 transition-all shadow-sm backdrop-blur-md">
+            class="relative w-full flex items-end bg-white/80 dark:bg-slate-800/80 border border-white/70 dark:border-white/10 focus-within:border-indigo-300 dark:focus-within:border-indigo-400/60 rounded-[1.75rem] p-2 transition-all shadow-sm backdrop-blur-md">
 
-            <textarea [(ngModel)]="userInput" name="messageInput" rows="1" placeholder="Send a message to Sage..."
+            <textarea
+              #messageTextarea
+              [(ngModel)]="userInput"
+              name="messageInput" rows="1" placeholder="Send a message to Sage..."
               (keydown.enter)="handleEnterKey($event)"
-              class="flex-1 bg-transparent border-0 ring-0 focus:outline-none placeholder-slate-400 text-slate-800 text-base py-2.5 px-3 resize-none max-h-36 min-h-[40px] scrollbar-none leading-normal break-words whitespace-pre-wrap">
+              (input)="autoResizeTextarea()"
+              class="flex-1 bg-transparent border-0 ring-0 focus:outline-none placeholder-slate-400 dark:placeholder-white/40 text-slate-800 dark:text-white text-base py-2.5 px-3 resize-none min-h-[40px] scrollbar-none leading-normal break-words whitespace-pre-wrap">
             </textarea>
 
-            <div class="flex items-center gap-2.5 pl-2.5 border-l border-white/70 h-10 mb-0.5">
+            <div
+              class="flex items-center gap-1.5 sm:gap-2.5 pl-1.5 sm:pl-2.5 border-l border-white/70 dark:border-white/10 h-10 mb-0.5">
 
               <!-- Attach Button -->
               <button type="button" (click)="onAttachClick()" title="Attach files"
-                class="flex items-center justify-center h-9 w-9 rounded-full border border-white/70 text-slate-400 hover:text-indigo-600 hover:bg-white/70 transition-colors cursor-pointer">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                      class="flex items-center justify-center h-9 w-9 rounded-full border border-white/70 dark:border-white/10 text-slate-400 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                 </svg>
               </button>
 
               <!-- MODEL SELECTOR -->
               <div class="relative flex items-center h-9">
                 <button type="button" (click)="onToggleModelMenu()"
-                  class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200/70 border border-white/70 rounded-full h-9 pl-2.5 pr-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 text-slate-700 max-w-[170px] cursor-pointer transition-colors">
-                  <span class="flex h-4 w-4 shrink-0 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[9px]">✦</span>
+                        class="flex items-center gap-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200/70 dark:hover:bg-white/20 border border-white/70 dark:border-white/10 rounded-full h-9 pl-2.5 pr-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-400/50 focus:border-indigo-300 text-slate-700 dark:text-white max-w-[110px] sm:max-w-[170px] cursor-pointer transition-colors">
+                  <span
+                    class="flex h-4 w-4 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-400/30 text-indigo-500 dark:text-indigo-200 items-center justify-center text-[9px]">✦</span>
                   <span class="truncate">{{ chatService.selectedModel().name || 'Select model' }}</span>
-                  <svg class="shrink-0 text-slate-400 transition-transform" [class.rotate-180]="isModelMenuOpen()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <svg class="shrink-0 text-slate-400 dark:text-white/60 transition-transform"
+                       [class.rotate-180]="isModelMenuOpen()" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </button>
 
                 @if (isModelMenuOpen()) {
-                <!-- Click-outside scrim -->
-                <button type="button" (click)="onToggleModelMenu()" aria-label="Close model menu"
-                  class="fixed inset-0 z-10 cursor-default" tabindex="-1"></button>
+                  <!-- Click-outside scrim -->
+                  <button type="button" (click)="onToggleModelMenu()" aria-label="Close model menu"
+                          class="fixed inset-0 z-10 cursor-default" tabindex="-1"></button>
 
-                <div class="absolute bottom-full mb-2 right-0 w-72 max-h-80 overflow-y-auto bg-white/90 backdrop-blur-2xl rounded-2xl border border-white/70 shadow-xl p-1.5 z-20 scrollbar-thin">
+                  <div
+                    class="absolute bottom-full mb-2 right-0 w-64 sm:w-72 max-h-80 overflow-y-auto bg-white/90 dark:bg-slate-800/95 backdrop-blur-2xl rounded-2xl border border-white/70 dark:border-white/10 shadow-xl p-1.5 z-20 scrollbar-thin">
 
-                  <div class="px-2.5 pt-2 pb-1 text-[10px] uppercase tracking-wider font-bold text-slate-400">Local</div>
-                  @for (m of chatService.localModels(); track m.id) {
-                  <button type="button" (click)="onModelChange(m); onToggleModelMenu()"
-                    class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-100 text-left transition-colors cursor-pointer">
-                    <span class="flex h-6 w-6 shrink-0 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[10px]">✦</span>
-                    <span class="flex-1 min-w-0 flex items-center gap-2">
-                      <span class="text-sm font-semibold text-slate-700 truncate">{{ m.name }}</span>
-                      @if (m.badge) {
-                      <span class="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">{{ m.badge }}</span>
-                      }
+                    <div
+                      class="px-2.5 pt-2 pb-1 text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-white/50">
+                      Local
+                    </div>
+                    @for (m of chatService.localModels(); track m.id) {
+                      <button type="button" (click)="onModelChange(m); onToggleModelMenu()"
+                              class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 text-left transition-colors cursor-pointer">
+                        <span
+                          class="flex h-6 w-6 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-400/30 text-indigo-500 dark:text-indigo-200 items-center justify-center text-[10px]">✦</span>
+                        <span class="flex-1 min-w-0 flex items-center gap-2">
+                      <span class="text-sm font-semibold text-slate-700 dark:text-white truncate">{{ m.name }}</span>
+                          @if (m.badge) {
+                            <span
+                              class="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-400/20 text-indigo-500 dark:text-indigo-200">{{ m.badge }}</span>
+                          }
                     </span>
-                    @if (chatService.selectedModel().modelKey === m.modelKey) {
-                    <svg class="shrink-0 text-indigo-500" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+                        @if (chatService.selectedModel().modelKey === m.modelKey) {
+                          <svg class="shrink-0 text-indigo-500 dark:text-indigo-300" width="15" height="15"
+                               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                               stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        }
+                      </button>
                     }
-                  </button>
-                  }
 
-                  <div class="px-2.5 pt-3 pb-1 text-[10px] uppercase tracking-wider font-bold text-slate-400">Cloud</div>
-                  @for (m of chatService.cloudModels(); track m.id) {
-                  <button type="button" (click)="onModelChange(m); onToggleModelMenu()"
-                    class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-100 text-left transition-colors cursor-pointer">
-                    <span class="flex h-6 w-6 shrink-0 rounded-full bg-indigo-100 text-indigo-500 items-center justify-center text-[10px]">✦</span>
-                    <span class="flex-1 min-w-0 flex items-center gap-2">
-                      <span class="text-sm font-semibold text-slate-700 truncate">{{ m.name }}</span>
-                      @if (m.badge) {
-                      <span class="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">{{ m.badge }}</span>
-                      }
+                    <div
+                      class="px-2.5 pt-3 pb-1 text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-white/50">
+                      Cloud
+                    </div>
+                    @for (m of chatService.cloudModels(); track m.id) {
+                      <button type="button" (click)="onModelChange(m); onToggleModelMenu()"
+                              class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 text-left transition-colors cursor-pointer">
+                        <span
+                          class="flex h-6 w-6 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-400/30 text-indigo-500 dark:text-indigo-200 items-center justify-center text-[10px]">✦</span>
+                        <span class="flex-1 min-w-0 flex items-center gap-2">
+                      <span class="text-sm font-semibold text-slate-700 dark:text-white truncate">{{ m.name }}</span>
+                          @if (m.badge) {
+                            <span
+                              class="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-400/20 text-indigo-500 dark:text-indigo-200">{{ m.badge }}</span>
+                          }
                     </span>
-                    @if (chatService.selectedModel().modelKey === m.modelKey) {
-                    <svg class="shrink-0 text-indigo-500" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+                        @if (chatService.selectedModel().modelKey === m.modelKey) {
+                          <svg class="shrink-0 text-indigo-500 dark:text-indigo-300" width="15" height="15"
+                               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                               stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        }
+                      </button>
                     }
-                  </button>
-                  }
-                </div>
+                  </div>
                 }
               </div>
 
               <!-- Streaming Toggle -->
-<!--              <button type="button" (click)="onToggleStreaming()"-->
-<!--                [class.bg-indigo-100]="streamingEnabled()"-->
-<!--                [class.text-indigo-600]="streamingEnabled()"-->
-<!--                [class.bg-slate-100]="!streamingEnabled()"-->
-<!--                [class.text-slate-400]="!streamingEnabled()"-->
-<!--                class="flex items-center gap-1.5 h-9 px-3 rounded-full border border-white/70 text-xs font-bold transition-colors cursor-pointer">-->
-<!--                <span class="flex h-2 w-2 rounded-full" [class.bg-indigo-500]="streamingEnabled()" [class.bg-slate-300]="!streamingEnabled()"></span>-->
-<!--                Stream-->
-<!--              </button>-->
+              <!--              <button type="button" (click)="onToggleStreaming()"-->
+              <!--                [class.bg-indigo-100]="streamingEnabled()"-->
+              <!--                [class.text-indigo-600]="streamingEnabled()"-->
+              <!--                [class.bg-slate-100]="!streamingEnabled()"-->
+              <!--                [class.text-slate-400]="!streamingEnabled()"-->
+              <!--                class="flex items-center gap-1.5 h-9 px-3 rounded-full border border-white/70 text-xs font-bold transition-colors cursor-pointer">-->
+              <!--                <span class="flex h-2 w-2 rounded-full" [class.bg-indigo-500]="streamingEnabled()" [class.bg-slate-300]="!streamingEnabled()"></span>-->
+              <!--                Stream-->
+              <!--              </button>-->
 
               <!-- Send Button Anchor -->
-              <button type="submit" [disabled]="(!userInput().trim() && selectedFiles().length === 0) || chatService.isThinking()"
-                class="h-9 w-9 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-500 hover:from-indigo-400 hover:to-violet-400 text-white disabled:opacity-20 disabled:hover:from-indigo-500 disabled:hover:to-violet-500 rounded-full transition-all active:scale-95 shadow-[0_4px_14px_rgba(99,102,241,0.4)] cursor-pointer">
+              <button type="submit"
+                      [disabled]="(!userInput().trim() && selectedFiles().length === 0) || chatService.isThinking()"
+                      class="h-9 w-9 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-500 hover:from-indigo-400 hover:to-violet-400 text-white disabled:opacity-20 disabled:hover:from-indigo-500 disabled:hover:to-violet-500 rounded-full transition-all active:scale-95 shadow-[0_4px_14px_rgba(99,102,241,0.4)] cursor-pointer shrink-0">
                 <span class="font-bold text-sm">↑</span>
               </button>
             </div>
 
           </div>
 
-          <div class="text-xs text-slate-400 font-mono tracking-normal text-center">
+          <div class="text-xs text-slate-400 dark:text-white/40 font-mono tracking-normal text-center">
             SageGPT is AI. Please make sure to check the results.
           </div>
         </form>
