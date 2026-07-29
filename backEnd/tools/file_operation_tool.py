@@ -1,5 +1,5 @@
 """
-folder_tools.py
+file_operation_tool.py
 
 Lives in the project's parent folder (the same directory that contains
 ./agents, ./services, ./repo, etc.).

@@ -1,37 +1,42 @@
 # services/llm_service.py
 import base64
 import json
+import os
 import traceback
 import uuid
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import List, Dict, Any, Optional
+
+from dotenv import load_dotenv
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from fastapi import UploadFile
 
 from agents.ollama_agent import OllamaAgent
 from repository.vector_repository import VectorRepository
 from services.embedding_service import EmbeddingService
-from tools.chat_history import ChatHistorySearchTool
-from tools.folder_tools import FolderReadTool, FolderWriteTool
+from tools.search_chat_history_tool import ChatHistorySearchTool
+from tools.file_operation_tool import FolderReadTool, FolderWriteTool
 from models.chat_models import ChatMessage
-from repository.repository import ConversationRepository
+from repository.conversation_repository import ConversationRepository
 from tools.knowledge_base_tool import KnowledgeBaseSearchTool
 from tools.web_search_tool import WebSearchTool
 
 from fastmcp import Client as FastMCPClient
-import asyncio
 
 IMAGE_UNAVAILABLE_MESSAGE = "Sorry, I can't process images yet."
 UPLOAD_ROOT = Path("uploads")
 
-TEXT_EXTENSIONS = {".txt", ".md", ".csv", ".json", ".log", ".py", ".js", ".ts", ".html", ".css", ".yaml", ".yml"}
-IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
-PDF_EXTENSIONS = {".pdf"}
-DOCX_EXTENSIONS = {".docx"}
+TEXT_EXTENSIONS = [".txt", ".md", ".csv", ".json", ".log", ".py", ".js", ".ts", ".html", ".css", ".yaml", ".yml"]
+IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".webp"]
+PDF_EXTENSIONS = [".pdf"]
+DOCX_EXTENSIONS = [".docx"]
 INLINE_TEXT_CHAR_LIMIT = 6000
 MAX_INLINE_MESSAGES = 30  # tune to your model's context window
+
+env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+load_dotenv(dotenv_path = env_path)
 
 class LlmService:
     def __init__(self):
@@ -51,6 +56,7 @@ class LlmService:
             # 2: ("GPT-5 Mini", "openai:gpt-5-mini"),
             # 3: ("Claude Sonnet 4", "anthropic:claude-sonnet-4"),
             # 4: ("Gemini 2.5 Pro", "google_genai:gemini-2.5-pro"),
+            5: ("Gemma 4 12B","ollama:gemma4:12b")
         }
 
         self.starter_system_prompt = (
@@ -280,7 +286,6 @@ class LlmService:
         return any(entry["kind"] == "image" for entry in parsedFileData)
 
     async def chatWithLlm(self, user_id: int, chat_id: int, model_name:str, message: str, files: Optional[List[UploadFile]] = None) -> tuple[int, List[ChatMessage]]:
-        await self.check_mcp_status()
 
         files = files or []
         conversation: List[ChatMessage] = []
@@ -368,11 +373,16 @@ class LlmService:
                 user_id=user_id,
             )
 
-            mcp_tools = await self.mcp_tool_client.get_tools()
+            mcp_tools = []
+
+            # try:
+            #     mcp_tools = await self.mcp_tool_client.get_tools()
+            # except Exception as e:
+            #     print("Failed to get tools: " + str(e))
 
             agent = OllamaAgent(
                 model_name=model_name,
-                tools=[mcp_tools,kb_tool,chat_history_tool],
+                tools=self._fs_tools + mcp_tools +[kb_tool,chat_history_tool],
                 system_prompt=self.starter_system_prompt,
             )
 

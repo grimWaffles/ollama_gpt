@@ -57,6 +57,8 @@ class ConversationRepository:
             print(f"Error creating conversation: {e}")
             self.connection.rollback()
             raise
+        finally:
+            self.close()
 
     def get_conversation(self, chat_id: int):
         query = """
