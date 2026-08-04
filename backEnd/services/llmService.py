@@ -459,6 +459,7 @@ class LlmService:
                 )
             )
 
+
             if self.app_config.use_embedding:
                 self.embedding_service.ingest_message(user_message_id, chat_id, user_id, "user", message)
 
