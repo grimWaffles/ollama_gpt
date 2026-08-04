@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import SimpleConnectionPool
@@ -73,11 +74,11 @@ class VectorRepository:
                     """
                     INSERT INTO document_chunks
                     (document_id, chat_id, user_id, chunk_index, content, embedding, token_count)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (document_id, chunk_index) DO NOTHING
                     """,
                     [
                         (document_id, chat_id, user_id, c["chunk_index"], c["content"],
-                         np.array(c["embedding"], dtype=np.float32), c.get("token_count"))  # <-- convert
+                         np.array(c["embedding"], dtype=np.float32), c.get("token_count"))
                         for c in chunks
                     ],
                 )
@@ -144,10 +145,11 @@ class VectorRepository:
                     """
                     INSERT INTO message_chunks
                         (message_id, chat_id, user_id, role, chunk_index, content, embedding)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (message_id, chunk_index) DO NOTHING
                     """,
                     [
-                        (message_id, chat_id, user_id, role, c["chunk_index"], c["content"], np.array(c["embedding"], dtype=np.float32))
+                        (message_id, chat_id, user_id, role, c["chunk_index"], c["content"],
+                         np.array(c["embedding"], dtype=np.float32))
                         for c in chunks
                     ],
                 )
@@ -174,6 +176,7 @@ class VectorRepository:
                                chat_id,
                                message_id,
                                chunk_index,
+                               created_at,
                                embedding <=> %s AS distance
                         FROM message_chunks
                         WHERE chat_id = %s
@@ -190,6 +193,7 @@ class VectorRepository:
                                chat_id,
                                message_id,
                                chunk_index,
+                               created_at,
                                embedding <=> %s AS distance
                         FROM message_chunks
                         WHERE user_id = %s
@@ -198,6 +202,51 @@ class VectorRepository:
                         """,
                         (query_vec, user_id, query_vec, k),
                     )
+                return [dict(row) for row in cur.fetchall()]
+        finally:
+            self._put_conn(conn)
+
+    def insert_summary(self, chat_id: int, user_id: int, content: str,
+                       embedding: List[float], start_sequence_no: int, end_sequence_no: int) -> Optional[int]:
+        conn = self._get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO chat_summaries
+                    (chat_id, user_id, content, embedding, start_sequence_no, end_sequence_no)
+                    VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (chat_id, start_sequence_no, end_sequence_no) DO NOTHING
+                    RETURNING id
+                    """,
+                    (chat_id, user_id, content, np.array(embedding, dtype=np.float32),
+                     start_sequence_no, end_sequence_no),
+                )
+                row = cur.fetchone()
+            conn.commit()
+            return row[0] if row else None
+        finally:
+            self._put_conn(conn)
+
+    def similarity_search_summaries(self, chat_id: int, query_embedding: List[float], k: int = 3) -> List[
+        Dict[str, Any]]:
+        query_vec = np.array(query_embedding, dtype=np.float32)
+        conn = self._get_conn()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT content,
+                           start_sequence_no,
+                           end_sequence_no,
+                           created_at,
+                           embedding <=> %s AS distance
+                    FROM chat_summaries
+                    WHERE chat_id = %s
+                    ORDER BY embedding <=> %s
+                        LIMIT %s
+                    """,
+                    (query_vec, chat_id, query_vec, k),
+                )
                 return [dict(row) for row in cur.fetchall()]
         finally:
             self._put_conn(conn)

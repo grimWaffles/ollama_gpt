@@ -1,5 +1,6 @@
+
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from langchain_ollama import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -200,3 +201,26 @@ class EmbeddingService:
                         "error": str(e),
                     },
                 )
+
+    def ingest_summary(self, chat_id: int, user_id: int, content: str,
+                       start_sequence_no: int, end_sequence_no: int) -> Optional[int]:
+        """Summaries are stored as a single dense vector, not chunked — they're
+        already compact by construction."""
+        if not content or not content.strip():
+            return None
+        try:
+            embedding = self.embed_query(content)
+            summary_id = self.vector_repo.insert_summary(
+                chat_id, user_id, content, embedding, start_sequence_no, end_sequence_no
+            )
+            logger.info("summary_ingested", extra={
+                "event": "summary_ingested", "chat_id": chat_id, "user_id": user_id,
+                "summary_id": summary_id, "start_sequence_no": start_sequence_no,
+                "end_sequence_no": end_sequence_no,
+            })
+            return summary_id
+        except Exception as e:
+            logger.exception("summary_ingest_failed", extra={
+                "event": "summary_ingest_failed", "chat_id": chat_id, "error": str(e),
+            })
+            return None

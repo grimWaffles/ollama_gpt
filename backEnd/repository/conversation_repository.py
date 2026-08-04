@@ -139,6 +139,20 @@ class ConversationRepository:
             self.connection.rollback()
             raise
 
+    async def clear_history(self):
+        query = """
+            TRUNCATE TABLE conversations, messages
+            RESTART IDENTITY
+            CASCADE;
+        """
+        try:
+            with self.connection.cursor() as c:
+                c.execute(query)
+            self.connection.commit()
+            return True
+        except Exception as e:
+            self.connection.rollback()
+            return False
     # --------------- Message CRUD ---------------
 
     def create_message(self, message):
@@ -241,5 +255,62 @@ class ConversationRepository:
 
         except Exception as e:
             print(f"Error deleting message {message_id}: {e}")
+            self.connection.rollback()
+            raise
+
+    def get_last_sequence_no(self, chat_id: int) -> int:
+        query = "SELECT COALESCE(MAX(sequence_no), 0) FROM messages WHERE chat_id = %s"
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(query, (chat_id,))
+                result = cursor.fetchone()
+                return result[0] if result else 0
+        except Exception as e:
+            print(f"Error fetching last sequence_no for chat {chat_id}: {e}")
+            self.connection.rollback()
+            return 0
+
+    def get_unarchived_message_count(self, chat_id: int) -> int:
+        query = "SELECT COUNT(*) FROM messages WHERE chat_id = %s AND archived = false"
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(query, (chat_id,))
+                result = cursor.fetchone()
+                return result[0] if result else 0
+        except Exception as e:
+            print(f"Error counting unarchived messages for chat {chat_id}: {e}")
+            self.connection.rollback()
+            return 0
+
+    def get_oldest_unarchived_messages(self, chat_id: int, limit: int):
+        """Oldest-first, excluding tool messages (nothing to summarize there)."""
+        query = """
+                SELECT id, role, message, sequence_no
+                FROM messages
+                WHERE chat_id = %s \
+                  AND archived = false \
+                  AND role != 'tool'
+                ORDER BY sequence_no ASC
+                    LIMIT %s
+                """
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(query, (chat_id, limit))
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Error fetching oldest unarchived messages for chat {chat_id}: {e}")
+            self.connection.rollback()
+            return []
+
+    def archive_messages(self, message_ids: list[int]) -> None:
+        if not message_ids:
+            return
+        query = "UPDATE messages SET archived = true WHERE id = ANY(%s)"
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(query, (message_ids,))
+            self.connection.commit()
+        except Exception as e:
+            print(f"Error archiving messages {message_ids}: {e}")
             self.connection.rollback()
             raise

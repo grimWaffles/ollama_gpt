@@ -18,16 +18,6 @@ app.add_middleware(
 )
 
 # Resolve service dependencies
-
-# def get_env_service():
-#     return EnvService()
-#
-# def get_llm_model_service() -> LlmModelService:
-#     return LlmModelService()
-#
-# def get_system_tool_service() -> SystemToolService:
-#     return SystemToolService()
-
 def get_llm_service(
 ) -> LlmService:
     return LlmService()
@@ -41,7 +31,7 @@ async def say_hello(
     files: List[UploadFile] = File(default=[]),
     llmService: LlmService = Depends(get_llm_service)
 ):
-    chat_id, messages = await llmService.chat_with_llm(userId, chatId, modelName, message, files)
+    chat_id, messages = await llmService.chat_with_llm_2(userId, chatId, modelName, message, files)
     return ChatResponse(userId=userId, chatId=chat_id, messages=messages)
 
 @app.get("/models/local", response_model=List[ModelInfo])
@@ -68,3 +58,8 @@ async def list_documents(chat_id: int, llmService: LlmService = Depends(get_llm_
 async def delete_document(document_id: int, llmService: LlmService = Depends(get_llm_service)):
     llmService.vector_repo.delete_document(document_id)
     return {"deleted": document_id}
+
+@app.get("clear/all")
+async def clear_history(llmService: LlmService = Depends(get_llm_service)):
+    result = llmService.clear_all_history()
+    return {"result":result}
