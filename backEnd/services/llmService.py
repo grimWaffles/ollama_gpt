@@ -18,6 +18,9 @@ from models.chat_models import ChatMessage
 from repository.conversation_repository import ConversationRepository
 from tools.knowledge_base_tool import KnowledgeBaseSearchTool
 
+import asyncio
+import re
+
 def _has_image(parsedFileData: List[Dict[str, Any]]) -> bool:
     return any(entry["kind"] == "image" for entry in parsedFileData)
 
@@ -418,8 +421,169 @@ class LlmService:
             for entry in parsedFileData
         ]
 
+    async def _get_verified_response(
+            self,
+            agent_conversation: List[Dict[str, str]],
+            message: str,
+            embedding_tools: list,
+    ) -> tuple[ChatMessage, Dict[str, Any]]:
+        """
+        Multi-model verification pipeline:
+          1. Two independent models answer the same prompt in parallel, each
+             required to give sources/confidence/reasoning alongside the answer.
+          2. A third model receives both responses and is instructed to verify
+             them, surface disagreements, and produce a single resolved answer.
+          3. If the query looks high-stakes/factual, external search results are
+             gathered first and handed to the verifier as ground truth — because
+             two LLMs agreeing is still just LLM opinion, not evidence.
+
+        Returns (final_message, debate_metadata) — metadata is for logging/
+        debugging only and is not sent to the user.
+        """
+        cloud_models = self.llm_model_service.get_cloud_models()
+        _, model_a_name = cloud_models[1]  # GPT-OSS
+        _, model_b_name = cloud_models[5]  # Gemma 4 31B
+        _, judge_name = cloud_models[6]  # Minimax-m3 as the verifier
+
+        debate_instructions = (
+            "Answer the user's question fully. Then, in addition to the answer, "
+            "give:\n"
+            "SOURCES: what sources, documents, or general knowledge you are relying on.\n"
+            "CONFIDENCE: low / medium / high, and why.\n"
+            "REASONING: a short explanation of how you reached the answer.\n"
+            "Structure your reply with these labeled sections: ANSWER, SOURCES, "
+            "CONFIDENCE, REASONING."
+        )
+
+        def _with_debate_instructions(base: List[Dict[str, str]]) -> List[Dict[str, str]]:
+            variant = [dict(m) for m in base]
+            if variant and variant[0]["role"] == "system":
+                variant[0] = {**variant[0], "content": variant[0]["content"] + "\n\n" + debate_instructions}
+            else:
+                variant.insert(0, {"role": "system", "content": debate_instructions})
+            return variant
+
+        conversation_a = _with_debate_instructions(agent_conversation)
+        conversation_b = _with_debate_instructions(agent_conversation)
+
+        agent_a = OllamaAgent(model_name=model_a_name, tools=embedding_tools, system_prompt=self.starter_system_prompt)
+        agent_b = OllamaAgent(model_name=model_b_name, tools=embedding_tools, system_prompt=self.starter_system_prompt)
+
+        # --- Step 1: independent, parallel first-pass answers ---
+        response_a, response_b = await asyncio.gather(
+            agent_a.ainvoke(conversation_a),
+            agent_b.ainvoke(conversation_b),
+        )
+        answer_a = response_a[-1].content if response_a else "(model A produced no response)"
+        answer_b = response_b[-1].content if response_b else "(model B produced no response)"
+
+        # --- Step 2: external evidence for high-stakes factual queries (optional) ---
+        external_context = ""
+        if self._is_high_stakes_query(message):
+            external_context = await self._gather_external_evidence(message)
+
+        # --- Step 3: third model verifies, resolves conflicts, gives final answer ---
+        if external_context:
+            evidence_instruction = (
+                "3. Where external evidence is provided below, treat it as ground truth "
+                "and prefer claims it supports over either model's unsupported claims.\n"
+                "4. Where no external evidence is available, resolve disagreements by "
+                "weighing stated confidence and reasoning quality — do not average or "
+                "split the difference between conflicting facts.\n"
+            )
+        else:
+            evidence_instruction = (
+                "3. No external evidence was retrieved for this query — resolve any "
+                "disagreements by weighing each model's stated confidence and reasoning "
+                "quality. Do not average or split the difference between conflicting "
+                "facts, and do not present unverified claims as more certain than they are.\n"
+            )
+
+        verifier_prompt = (
+                "You are a verification judge reviewing two independent AI answers to "
+                "the same question. Each answer includes its own sources, confidence, "
+                "and reasoning.\n\n"
+                "Your job:\n"
+                "1. Identify where the two answers agree and where they disagree.\n"
+                "2. Cross-check specific facts, numbers, and claims between the two.\n"
+                + evidence_instruction +
+                "5. Output the FINAL ANSWER ONLY, after conflicts are resolved. Do not "
+                "mention the models, the debate process, or unresolved disagreements "
+                "in your output — write directly to the end user as a normal answer.\n\n"
+                f"User's question:\n{message}\n\n"
+                f"--- Response A ---\n{answer_a}\n\n"
+                f"--- Response B ---\n{answer_b}\n\n"
+                + (
+                    f"--- External evidence (treat as ground truth) ---\n{external_context}\n\n" if external_context else "")
+        )
+
+        judge_agent = OllamaAgent(
+            model_name=judge_name,
+            tools=[],
+            system_prompt="You are a careful, evidence-driven fact-checking judge. You resolve disagreements between two AI answers and output only the final, correct answer.",
+        )
+        judge_response = await judge_agent.ainvoke([{"role": "user", "content": verifier_prompt}])
+        final_content = judge_response[-1].content if judge_response else (answer_a or answer_b)
+
+        final_message = ChatMessage(role="assistant", content=final_content)
+        debate_metadata = {
+            "model_a": model_a_name,
+            "model_b": model_b_name,
+            "judge_model": judge_name,
+            "answer_a": answer_a,
+            "answer_b": answer_b,
+            "used_external_evidence": bool(external_context),
+        }
+        return final_message, debate_metadata
+
+    def _is_high_stakes_query(self, message: str) -> bool:
+        """
+        Cheap heuristic gate for "is this worth a real search, not just LLM
+        cross-checking". Errs toward searching when unsure — a wasted search is
+        far cheaper than a confidently-wrong fact getting through two LLMs that
+        happen to agree.
+        """
+        triggers = [
+            r"\bhow many\b", r"\bhow much\b", r"\bwhen (did|was|is|will)\b",
+            r"\bwho is\b", r"\bwho was\b", r"\bcurrent(ly)?\b", r"\blatest\b",
+            r"\btoday'?s\b", r"\bthis year\b", r"\bstatistic", r"\bpercent",
+            r"\bprice\b", r"\bdate\b", r"\bversion\b", r"\brelease", r"\bnews\b",
+            r"\d{4}",  # a bare year
+        ]
+        text = message.lower()
+        return any(re.search(t, text) for t in triggers)
+
+    async def _gather_external_evidence(self, message: str) -> str:
+        """
+        Runs an external web search / retrieval pass so verification has
+        something outside the two models to check claims against. Optional:
+        controlled by app_config.use_external_search, and safely no-ops if the
+        search tool isn't configured. Never blocks the response on failure.
+        """
+        if not getattr(self.app_config, "USE_EXTERNAL_WEBSEARCH", False):
+            return ""
+
+        web_search_tool = getattr(self, "web_search_tool", None)
+        if web_search_tool is None:
+            print("External search enabled in config but no web_search_tool is configured — skipping.")
+            return ""
+
+        try:
+            results = await web_search_tool.asearch(message, max_results=5)
+        except Exception as e:
+            print(f"External evidence retrieval failed: {e}")
+            return ""
+
+        if not results:
+            return ""
+
+        return "\n\n".join(
+            f"[{r.get('title', 'source')}] {r.get('snippet', '')} ({r.get('url', '')})"
+            for r in results
+        )
+
     async def chat_with_llm_2(self, user_id: int, chat_id: int, model_name: str,
-                              message: str, files: Optional[List[UploadFile]] = None) -> tuple[int, List[ChatMessage]]:
+                              message: str, extended_thinking: bool,files: Optional[List[UploadFile]] = None) -> tuple[int, List[ChatMessage]]:
         files = files or []
         try:
             is_new_conversation = not chat_id or chat_id == 0
@@ -498,16 +662,27 @@ class LlmService:
                 embedding_tools = [kb_tool, chat_history_tool]
 
             mcp_tools = []
+            new_messages = ""
 
-            agent = OllamaAgent(
-                model_name=model_name,
-                tools=self._fs_tools + mcp_tools + embedding_tools,
-                system_prompt=self.starter_system_prompt,
-            )
+            if not extended_thinking:
+                # --- 4.a Invoke with the compact prompt, not raw history ---
+                agent = OllamaAgent(
+                    model_name=model_name,
+                    tools=self._fs_tools + mcp_tools + embedding_tools,
+                    system_prompt=self.starter_system_prompt,
+                )
 
-            # --- 4. Invoke with the compact prompt, not raw history ---
-            full_response = await agent.ainvoke(agent_conversation)
-            new_messages = full_response[len(agent_conversation):]
+                full_response = await agent.ainvoke(agent_conversation)
+                new_messages = full_response[len(agent_conversation):]
+
+            else:
+                # --- 4.b Dual-model debate + third-model verification, instead of a single agent.ainvoke ---
+                final_message, debate_metadata = await self._get_verified_response(
+                    agent_conversation=agent_conversation,
+                    message=message,
+                    embedding_tools=self._fs_tools + embedding_tools,
+                )
+                new_messages = [final_message]
 
             # --- 5. Persist + embed assistant output ---
             for new_msg in new_messages:
@@ -518,6 +693,7 @@ class LlmService:
                         sequenceNo=last_sequence_no, created_at=datetime.now(), attachments=None,
                     )
                 )
+
                 if self.app_config.use_embedding and new_msg.role not in ("tool",):
                     self.embedding_service.ingest_message(new_msg_id, chat_id, user_id, new_msg.role, new_msg.content)
 

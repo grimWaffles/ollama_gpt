@@ -28,10 +28,11 @@ async def say_hello(
     chatId: int = Form(...),
     message: str = Form(...),
     modelName: str = Form(...),
+    extendedThinking:bool = Form(...),
     files: List[UploadFile] = File(default=[]),
     llmService: LlmService = Depends(get_llm_service)
 ):
-    chat_id, messages = await llmService.chat_with_llm_2(userId, chatId, modelName, message, files)
+    chat_id, messages = await llmService.chat_with_llm_2(userId, chatId, modelName, message, extendedThinking, files)
     return ChatResponse(userId=userId, chatId=chat_id, messages=messages)
 
 @app.get("/models/local", response_model=List[ModelInfo])

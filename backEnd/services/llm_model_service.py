@@ -60,7 +60,8 @@ class LlmModelService:
     def get_cloud_models(self):
         return {
             1: ("GPT-OSS", "ollama:gpt-oss:120b-cloud"),
-            5: ("Gemma 4 31B","ollama:gemma4:31b-cloud")
+            5: ("Gemma 4 31B","ollama:gemma4:31b-cloud"),
+            6:("Minimax-m3", "ollama:minimax-m3:cloud"),
         }
 
     def get_system_prompt(self):

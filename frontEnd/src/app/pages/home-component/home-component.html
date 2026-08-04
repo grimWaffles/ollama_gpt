@@ -290,6 +290,17 @@
             <div
               class="flex items-center gap-1.5 sm:gap-2.5 pl-1.5 sm:pl-2.5 border-l border-white/70 dark:border-white/10 h-10 mb-0.5">
 
+              <!-- Extended Thinking -->
+              <button
+                type="button"
+                (click)="chatService.selectedModel().extendedThinking = !chatService.selectedModel().extendedThinking"
+                [ngClass]="chatService.selectedModel().extendedThinking
+                  ? 'text-indigo-500 dark:text-indigo-300 drop-shadow-[0_0_10px_rgba(99,102,241,0.9)] animate-pulse'
+                  : 'text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white/60'"
+                class="h-9 px-3 text-xs font-semibold transition-all duration-300 cursor-pointer select-none">
+                IntelliG+
+              </button>
+
               <!-- Attach Button -->
               <button type="button" (click)="onAttachClick()" title="Attach files"
                       class="flex items-center justify-center h-9 w-9 rounded-full border border-white/70 dark:border-white/10 text-slate-400 dark:text-white/70 hover:text-indigo-600 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0">

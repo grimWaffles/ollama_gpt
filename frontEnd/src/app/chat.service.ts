@@ -6,6 +6,7 @@ export interface ModelInfo {
   name: string;
   modelKey: string;
   badge?: string
+  extendedThinking: boolean
 }
 //** A file staged in the composer, not yet sent. */
 export interface PendingAttachment {
@@ -57,7 +58,7 @@ export class ChatService {
   conversations = signal<ConversationEntity[]>([]);
   localModels = signal<ModelInfo[]>([]);
   cloudModels = signal<ModelInfo[]>([]);
-  selectedModel = signal<ModelInfo>({modelKey: "", name: "", id: 0, badge: ""});
+  selectedModel = signal<ModelInfo>({modelKey: "", name: "", id: 0, badge: "", extendedThinking: false});
 
   // Status tracking states
   isThinking = signal<boolean>(false);
@@ -94,6 +95,8 @@ export class ChatService {
     formData.append('chatId', String(this.currentChatId()));
     formData.append("modelName",String(this.selectedModel().modelKey))
     formData.append('message', message);
+    formData.append("extendedThinking", this.selectedModel().extendedThinking ? "true" : "false")
+
     for (const file of files) {
       formData.append('files', file, file.name);
     }
@@ -124,7 +127,8 @@ export class ChatService {
             id: data[0].id,
             modelKey: data[0].modelKey,
             name: data[0].name,
-            badge: ""
+            badge: "",
+            extendedThinking:false
           });
         }
       }
@@ -138,7 +142,8 @@ export class ChatService {
             id: data[0].id,
             modelKey: data[0].modelKey,
             name: data[0].name,
-            badge: ""
+            badge: "",
+            extendedThinking: false
           });
         }
       }
